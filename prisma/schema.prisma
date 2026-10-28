@@ -1,0 +1,259 @@
+// Schéma Prisma officiel - Division Génie Infotronique (GIT)
+// Référence: GIT-CDC-2026-001 & GIT-DAT-2026-001 (Production Ready)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  MEMBER
+  CENSEUR
+  TREASURER
+  LAB_MANAGER
+  ADMIN
+  COMMUNICATION
+  FORMATION
+  CONSEILLER
+}
+
+enum PenaltyStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+enum EventStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+}
+
+enum CourseStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model User {
+  id                 String              @id @default(cuid())
+  matricule          String              @unique
+  nom                String
+  prenom             String
+  email              String              @unique
+  passwordHash       String
+  mustChangePassword Boolean             @default(true) // Oblige le changement à la 1ère connexion
+  niveau             String              // "GI_1", "GI_2", "GI_3", "GI_4", "GI_5", "GI_Bureau"
+  phone              String?
+  role               Role                @default(MEMBER)
+  poste              String?             // Ex: "Président de la Division", "Secrétaire Générale"
+  isActive           Boolean             @default(true)
+  qrCodeToken        String              @unique @default(cuid())
+  isWifiAllowed      Boolean             @default(false)
+  isLabAllowed       Boolean             @default(false)
+  passwordResetRequested Boolean         @default(false)
+  passwordResetReason    String?
+  passwordResetRequestedAt DateTime?
+  
+  // Relations
+  macAddresses       MacAddress[]
+  cotisations        Cotisation[]
+  penalties          Penalty[]           @relation("MemberPenalties")
+  issuedPenalties    Penalty[]           @relation("IssuedByCensor")
+  paymentsMade       Payment[]           @relation("TreasurerPayments")
+  contributions      ProjectContributor[]
+  registrations      EventRegistration[]
+  certifications     Certification[]
+  
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([niveau])
+  @@index([role])
+  @@index([isActive])
+}
+
+model MacAddress {
+  id         String   @id @default(cuid())
+  address    String   // Format: "XX:XX:XX:XX:XX:XX"
+  deviceName String?  // Ex: "Laptop PC", "iPhone"
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([address, userId])
+  @@index([userId])
+}
+
+model Cotisation {
+  id        String    @id @default(cuid())
+  mois      Int       // 1 a 12
+  annee     Int       // Ex: 2026
+  montant   Decimal   @db.Decimal(10, 2)
+  isPaid    Boolean   @default(false)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment   Payment?  @relation(fields: [paymentId], references: [id])
+  paymentId String?
+  scannedBy String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([userId, mois, annee])
+  @@index([isPaid])
+  @@index([mois, annee])
+}
+
+model Payment {
+  id           String       @id @default(cuid())
+  montantTotal Decimal      @db.Decimal(10, 2)
+  method       String       // Ex: "Especes", "Mobile Money", "Virement"
+  reference    String?
+  treasurerId  String
+  treasurer    User         @relation("TreasurerPayments", fields: [treasurerId], references: [id])
+  cotisations  Cotisation[]
+  createdAt    DateTime     @default(now())
+
+  @@index([treasurerId])
+  @@index([createdAt])
+}
+
+model Penalty {
+  id        String        @id @default(cuid())
+  userId    String
+  censorId  String
+  reason    String
+  amount    Decimal       @db.Decimal(10, 2)
+  status    PenaltyStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  paidAt    DateTime?
+  
+  user      User          @relation("MemberPenalties", fields: [userId], references: [id], onDelete: Cascade)
+  censor    User          @relation("IssuedByCensor", fields: [censorId], references: [id])
+
+  @@index([userId])
+  @@index([censorId])
+  @@index([status])
+}
+
+model Project {
+  id           String               @id @default(cuid())
+  title        String
+  slug         String               @unique
+  description  String               @db.Text
+  category     String?              // "Embarqué", "Web & Cloud", "IoT", "IA & Robotique"
+  githubUrl    String?
+  demoUrl      String?
+  coverImage   String?
+  featured     Boolean              @default(false)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  contributors ProjectContributor[]
+
+  @@index([category])
+  @@index([featured])
+}
+
+model ProjectContributor {
+  id            String   @id @default(cuid())
+  projectId     String
+  userId        String
+  roleInProject String?
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+}
+
+model Event {
+  id            String              @id @default(cuid())
+  title         String
+  description   String              @db.Text
+  startDate     DateTime
+  endDate       DateTime?
+  location      String?
+  status        EventStatus         @default(UPCOMING)
+  coverImage    String?
+  gallery       GalleryItem[]
+  registrations EventRegistration[]
+  createdAt     DateTime            @default(now())
+
+  @@index([status])
+  @@index([startDate])
+}
+
+model EventRegistration {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  createdAt DateTime @default(now())
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+}
+
+model GalleryItem {
+  id        String   @id @default(cuid())
+  eventId   String
+  url       String
+  type      String   // IMAGE ou VIDEO
+  caption   String?
+  createdAt DateTime @default(now())
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+}
+
+model Course {
+  id             String          @id @default(cuid())
+  title          String
+  description    String          @db.Text
+  status         CourseStatus    @default(PLANNED)
+  instructor     String?
+  hoursCount     Int?            @default(20)
+  startDate      DateTime?
+  level          String?         @default("Tous Niveaux")
+  certifications Certification[]
+  createdAt      DateTime        @default(now())
+
+  @@index([status])
+}
+
+model Certification {
+  id        String   @id @default(cuid())
+  courseId  String
+  userId    String
+  issuedAt  DateTime @default(now())
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, userId])
+  @@index([courseId])
+  @@index([userId])
+}
+
+model AccessLog {
+  id        String   @id @default(cuid())
+  matricule String
+  nom       String?
+  prenom    String?
+  niveau    String?  // Ex: "GI_1" à "GI_5"
+  granted   Boolean
+  reason    String
+  scannedBy String?  // Matricule du censeur ou du responsable labo
+  createdAt DateTime @default(now())
+
+  @@index([matricule])
+  @@index([granted])
+  @@index([createdAt])
+}

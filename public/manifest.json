@@ -1,0 +1,24 @@
+{
+  "name": "Division Génie Infotronique - Plateforme Membres & Laboratoire",
+  "short_name": "GIT Platform",
+  "description": "Application Web & PWA de gestion des membres, cotisations, contrôle d'accès QR Code et filtrage réseau du laboratoire.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0f1d",
+  "theme_color": "#0f2b5c",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

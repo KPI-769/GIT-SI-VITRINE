@@ -1,0 +1,45 @@
+[
+  {
+    "matricule": "22GIT019",
+    "nom": "ATANGANA",
+    "prenom": "Kevin Landry",
+    "niveau": "GI_4",
+    "isPaid": false,
+    "pendingPenalties": 1,
+    "macs": [
+      "BC:D0:74:99:88:77"
+    ],
+    "reasons": [
+      "Cotisation mensuelle impayée (2 000 FCFA)",
+      "1 pénalité(s) disciplinaire(s) non réglée(s)"
+    ]
+  },
+  {
+    "matricule": "25GIT012",
+    "nom": "BIKIE",
+    "prenom": "Vanessa Sandra",
+    "niveau": "GI_2",
+    "isPaid": false,
+    "pendingPenalties": 0,
+    "macs": [
+      "B8:27:EB:55:66:77"
+    ],
+    "reasons": [
+      "Cotisation mensuelle impayée (2 000 FCFA)"
+    ]
+  },
+  {
+    "matricule": "21GIT033",
+    "nom": "EBOUÉ",
+    "prenom": "Yannick Joel",
+    "niveau": "GI_5",
+    "isPaid": false,
+    "pendingPenalties": 0,
+    "macs": [
+      "08:00:27:FE:DC:BA"
+    ],
+    "reasons": [
+      "Cotisation mensuelle impayée (2 000 FCFA)"
+    ]
+  }
+]

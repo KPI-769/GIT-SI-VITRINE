@@ -1,8 +1,24 @@
-import { PrismaClient, Role, EventStatus, CourseStatus } from '@prisma/client';
+import prisma from '../src/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { SJP_OFFICIAL_MEMBERS, SJP_BUREAU_MEMBERS } from '../src/lib/members-data';
 
-const prisma = new PrismaClient();
+// Constantes typées pour éviter les désynchronisations de cache IDE de @prisma/client
+const Role = {
+  ADMIN: 'ADMIN',
+  MEMBER: 'MEMBER',
+} as const;
+
+const EventStatus = {
+  UPCOMING: 'UPCOMING',
+  ONGOING: 'ONGOING',
+  COMPLETED: 'COMPLETED',
+} as const;
+
+const CourseStatus = {
+  PLANNED: 'PLANNED',
+  IN_PROGRESS: 'IN_PROGRESS',
+  COMPLETED: 'COMPLETED',
+} as const;
 
 async function main() {
   console.log('🚀 Début du peuplement de la base MySQL git_community...');
@@ -47,7 +63,7 @@ async function main() {
     await prisma.user.upsert({
       where: { matricule: bm.matricule },
       update: {
-        role: bm.role as Role,
+        role: bm.role as any,
         poste: bm.poste,
         nom: bm.nom,
         prenom: bm.prenom,
@@ -61,7 +77,7 @@ async function main() {
         email: bm.email,
         phone: bm.phone || '',
         niveau: 'GI_Bureau',
-        role: bm.role as Role,
+        role: bm.role as any,
         poste: bm.poste,
         passwordHash: defaultPasswordHash,
         mustChangePassword: true,
@@ -113,7 +129,7 @@ async function main() {
           email: om.email,
           phone: om.phone,
           niveau,
-          role: Role.MEMBER,
+          role: Role.MEMBER as any,
           passwordHash: defaultPasswordHash,
           mustChangePassword: true,
           isActive: true,

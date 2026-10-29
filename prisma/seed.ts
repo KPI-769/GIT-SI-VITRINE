@@ -96,9 +96,9 @@ async function main() {
     const niveauIndex = (i % 5) + 1;
     const niveau = `GI_${niveauIndex}`;
 
-    let user: MinimalUser | null | undefined = existingEmailMap.get(om.email) || existingMatriculeMap.get(om.matricule);
+    let user = existingEmailMap.get(om.email) || existingMatriculeMap.get(om.matricule);
     if (!user) {
-      user = await prisma.user.upsert({
+      const created = await prisma.user.upsert({
         where: { matricule: om.matricule },
         update: {
           nom,
@@ -122,22 +122,25 @@ async function main() {
           isLabAllowed: false,
         },
       });
+      user = { id: created.id, email: created.email, matricule: created.matricule };
       existingEmailMap.set(user.email, user);
       existingMatriculeMap.set(user.matricule, user);
     }
+
+    const finalUser: MinimalUser = user;
 
     // Créer une cotisation pour le mois courant si elle n'existe pas
     await prisma.cotisation.upsert({
       where: {
         userId_mois_annee: {
-          userId: user.id,
+          userId: finalUser.id,
           mois: currentMonth,
           annee: currentYear,
         },
       },
       update: {},
       create: {
-        userId: user.id,
+        userId: finalUser.id,
         mois: currentMonth,
         annee: currentYear,
         montant: 2000,

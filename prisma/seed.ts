@@ -33,9 +33,17 @@ async function main() {
     },
   });
 
-  // 2. 16 Membres du Bureau Exécutif
+  // Helper pour exécuter par petits lots (évite la saturation réseau et accélère 10x)
+  async function processInBatches<T>(items: T[], batchSize: number, fn: (item: T, index: number) => Promise<void>) {
+    for (let i = 0; i < items.length; i += batchSize) {
+      const batch = items.slice(i, i + batchSize);
+      await Promise.all(batch.map((item, idx) => fn(item, i + idx)));
+    }
+  }
+
+  // 2. 17 Membres du Bureau Exécutif
   console.log(`🏛️ Insertion des ${SJP_BUREAU_MEMBERS.length} membres du Bureau Exécutif...`);
-  for (const bm of SJP_BUREAU_MEMBERS) {
+  await processInBatches(SJP_BUREAU_MEMBERS, 6, async (bm) => {
     await prisma.user.upsert({
       where: { matricule: bm.matricule },
       update: {
@@ -63,28 +71,27 @@ async function main() {
         isLabAllowed: true,
       },
     });
-  }
+  });
 
   // 3. 99 Membres Élèves-Ingénieurs
   console.log(`🎓 Insertion des ${SJP_OFFICIAL_MEMBERS.length} élèves-ingénieurs...`);
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
 
-  for (let i = 0; i < SJP_OFFICIAL_MEMBERS.length; i++) {
-    const om = SJP_OFFICIAL_MEMBERS[i];
+  // Pré-chargement des emails existants pour éviter les findUnique réseau lents
+  const existingUsers = await prisma.user.findMany({ select: { id: true, email: true, matricule: true } });
+  const existingEmailMap = new Map(existingUsers.map(u => [u.email, u]));
+  const existingMatriculeMap = new Map(existingUsers.map(u => [u.matricule, u]));
+
+  await processInBatches(SJP_OFFICIAL_MEMBERS, 8, async (om, i) => {
     const parts = om.fullName.trim().split(' ');
     const nom = parts[0] || 'MEMBRE';
     const prenom = parts.slice(1).join(' ') || 'GIT';
-    // Répartition équilibrée des niveaux pour la démo
     const niveauIndex = (i % 5) + 1;
     const niveau = `GI_${niveauIndex}`;
 
-    const existingByEmail = await prisma.user.findUnique({ where: { email: om.email } });
-    let user;
-    if (existingByEmail) {
-      // Déjà enregistré (ex: membre du Bureau Exécutif avec poste officiel)
-      user = existingByEmail;
-    } else {
+    let user = existingEmailMap.get(om.email) || existingMatriculeMap.get(om.matricule);
+    if (!user) {
       user = await prisma.user.upsert({
         where: { matricule: om.matricule },
         update: {
@@ -109,6 +116,8 @@ async function main() {
           isLabAllowed: false,
         },
       });
+      existingEmailMap.set(user.email, user);
+      existingMatriculeMap.set(user.matricule, user);
     }
 
     // Créer une cotisation pour le mois courant si elle n'existe pas
@@ -129,7 +138,7 @@ async function main() {
         isPaid: i % 3 === 0, // 1 sur 3 est à jour pour la simulation
       },
     });
-  }
+  });
 
   // 4. Événements initiaux
   console.log('📅 Insertion des événements initiaux...');

@@ -15,8 +15,7 @@ import {
   CheckCircle2,
   KeyRound,
   Eye,
-  EyeOff,
-  Sparkles
+  EyeOff
 } from 'lucide-react';
 
 export default function LoginPage() {
@@ -193,25 +192,14 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  Mot de passe
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setPassword('git2026')}
-                  className="text-[11px] text-[#0B3D91] hover:underline font-semibold cursor-pointer inline-flex items-center gap-1"
-                  title="Remplir avec le mot de passe initial officiel"
-                >
-                  <Sparkles className="w-3 h-3 text-[#FC3D21]" />
-                  <span>Défaut : git2026</span>
-                </button>
-              </div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                Mot de passe
+              </label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Mot de passe (par défaut : git2026)"
+                  placeholder="Mot de passe"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="input-nasa pl-10 pr-10 text-sm"
@@ -256,47 +244,6 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-
-          {/* Accès rapide en 1 clic pour tester */}
-          <div className="pt-3 border-t border-slate-100">
-            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block mb-2 text-center">
-              Comptes de test pré-configurés (mot de passe : git2026)
-            </span>
-            <div className="grid grid-cols-2 gap-1.5">
-              <button
-                type="button"
-                onClick={() => { setIdentifiant('GIT-ADMIN'); setPassword('git2026'); setErrorMsg(''); }}
-                className="px-2.5 py-1.5 bg-slate-50 hover:bg-blue-50 hover:text-[#0B3D91] hover:border-blue-200 border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-700 text-left transition cursor-pointer flex items-center justify-between"
-              >
-                <span>👑 Admin Central</span>
-                <span className="text-[9px] text-slate-400">Bureau</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { setIdentifiant('GIT-BUR-04'); setPassword('git2026'); setErrorMsg(''); }}
-                className="px-2.5 py-1.5 bg-slate-50 hover:bg-blue-50 hover:text-[#0B3D91] hover:border-blue-200 border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-700 text-left transition cursor-pointer flex items-center justify-between"
-              >
-                <span>⚖️ Censeur</span>
-                <span className="text-[9px] text-slate-400">Scan</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { setIdentifiant('GIT-BUR-06'); setPassword('git2026'); setErrorMsg(''); }}
-                className="px-2.5 py-1.5 bg-slate-50 hover:bg-blue-50 hover:text-[#0B3D91] hover:border-blue-200 border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-700 text-left transition cursor-pointer flex items-center justify-between"
-              >
-                <span>💰 Trésorière</span>
-                <span className="text-[9px] text-slate-400">Caisse</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { setIdentifiant('SJP-GI-001'); setPassword('git2026'); setErrorMsg(''); }}
-                className="px-2.5 py-1.5 bg-slate-50 hover:bg-blue-50 hover:text-[#0B3D91] hover:border-blue-200 border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-700 text-left transition cursor-pointer flex items-center justify-between"
-              >
-                <span>🎓 Étudiant</span>
-                <span className="text-[9px] text-slate-400">Membre</span>
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Modal de demande de réinitialisation formulée par l'étudiant */}

@@ -3,21 +3,36 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
+import PwaManager from "@/components/pwa/PwaManager";
 
 export const metadata: Metadata = {
   title: "Division Génie Infotronique (GIT) | Plateforme Officielle",
   description:
-    "Plateforme officielle de gestion des membres de la Division Génie Infotronique (GIT) : cotisations, contrôle d'accès QR, filtrage Wi-Fi et suivi du laboratoire.",
+    "Plateforme officielle PWA de la Division Génie Infotronique (GIT) : cotisations, contrôle d'accès QR, filtrage Wi-Fi et suivi du laboratoire.",
   manifest: "/manifest.json",
-  icons: { icon: "/logo.jpg", apple: "/logo.jpg" },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "GIT SJP",
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1E3A8A",
+  themeColor: "#050E1F",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -58,6 +73,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col transition-colors duration-200">
         <ThemeProvider>
           <AuthProvider>
+            <PwaManager />
             <SmoothScrollProvider>{children}</SmoothScrollProvider>
           </AuthProvider>
         </ThemeProvider>

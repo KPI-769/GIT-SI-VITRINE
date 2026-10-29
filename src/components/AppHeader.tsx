@@ -1,16 +1,17 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { ROLE_LABELS } from './AdminView';
 import MustChangePasswordModal from './MustChangePasswordModal';
 import ThemeToggle from './ThemeToggle';
-import { LogOut, Home, ShieldCheck, Sparkles, User as UserIcon } from 'lucide-react';
+import { LogOut, Home, ShieldCheck, Sparkles, User as UserIcon, Menu, X } from 'lucide-react';
 
 export default function AppHeader() {
   const { currentUser, logout } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   if (!currentUser) return null;
 
@@ -168,8 +169,120 @@ export default function AppHeader() {
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Déconnexion</span>
             </button>
+
+            {/* Bouton Hamburger Mobile */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition active:scale-95"
+              aria-label={mobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu de navigation'}
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5 text-red-500" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Menu Déroulant Mobile avec Navigation RBAC */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white/98 dark:bg-[#0B0F19]/98 backdrop-blur-2xl px-4 py-4 space-y-3 animate-fadeIn">
+            {/* Profil utilisateur en mode compact */}
+            <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900/80 rounded-xl border border-slate-200/80 dark:border-slate-800">
+              <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                {currentUser.prenom[0]}{currentUser.nom[0]}
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-900 dark:text-white">
+                  {currentUser.prenom} {currentUser.nom}
+                </p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${ROLE_LABELS[currentUser.role]?.badgeClass || 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}>
+                    {ROLE_LABELS[currentUser.role]?.label || currentUser.role}
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-400">
+                    {currentUser.matricule}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Liens de navigation selon le Rôle */}
+            <div className="grid grid-cols-2 gap-2 text-xs font-bold">
+              <Link
+                href="/espace-membre"
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 active:scale-98 transition flex items-center gap-2"
+              >
+                <span>🎓 Espace Membre</span>
+              </Link>
+
+              <Link
+                href="/organigramme"
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 active:scale-98 transition flex items-center gap-2"
+              >
+                <span>🏛️ Organigramme</span>
+              </Link>
+
+              <Link
+                href="/mediatheque"
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 active:scale-98 transition flex items-center gap-2"
+              >
+                <span>📚 Médiathèque</span>
+              </Link>
+
+              {(currentUser.role === 'CENSEUR' || currentUser.role === 'ADMIN') && (
+                <Link
+                  href="/censeur"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 active:scale-98 transition flex items-center gap-2"
+                >
+                  <span>⚖️ Scanner Censeur</span>
+                </Link>
+              )}
+
+              {(currentUser.role === 'TREASURER' || currentUser.role === 'ADMIN') && (
+                <Link
+                  href="/tresorier"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 active:scale-98 transition flex items-center gap-2"
+                >
+                  <span>💰 Trésorerie & Caisse</span>
+                </Link>
+              )}
+
+              {(currentUser.role === 'LAB_MANAGER' || currentUser.role === 'ADMIN') && (
+                <Link
+                  href="/labo"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2.5 rounded-xl bg-cyan-50/80 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800 text-cyan-700 dark:text-cyan-400 active:scale-98 transition flex items-center gap-2"
+                >
+                  <span>🔬 Laboratoire GIT</span>
+                </Link>
+              )}
+
+              {(currentUser.role === 'COMMUNITY_MANAGER' || currentUser.role === 'ADMIN') && (
+                <Link
+                  href="/community-manager"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2.5 rounded-xl bg-pink-50/80 dark:bg-pink-950/40 border border-pink-200 dark:border-pink-800 text-pink-700 dark:text-pink-400 active:scale-98 transition flex items-center gap-2"
+                >
+                  <span>📸 Galerie Médias</span>
+                </Link>
+              )}
+
+              {currentUser.role === 'ADMIN' && (
+                <Link
+                  href="/admin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2.5 rounded-xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400 active:scale-98 transition flex items-center gap-2 col-span-2"
+                >
+                  <span>👑 Administration Centrale</span>
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
       </header>
     </>
   );

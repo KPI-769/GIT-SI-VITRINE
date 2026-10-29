@@ -1,12 +1,16 @@
 {
-  "name": "Division Génie Infotronique - Plateforme Membres & Laboratoire",
-  "short_name": "GIT Platform",
-  "description": "Application Web & PWA de gestion des membres, cotisations, contrôle d'accès QR Code et filtrage réseau du laboratoire.",
-  "start_url": "/",
+  "id": "/?source=pwa",
+  "name": "Division Génie Infotronique · Saint Jérôme Polytechnique",
+  "short_name": "GIT SJP",
+  "description": "Application Web & PWA officielle de gestion des élèves-ingénieurs, cotisations, contrôle d'accès QR Code et laboratoire de la Division Génie Infotronique.",
+  "start_url": "/?utm_source=pwa",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0a0f1d",
-  "theme_color": "#0f2b5c",
+  "display_override": ["standalone", "window-controls-overlay", "minimal-ui"],
+  "background_color": "#050E1F",
+  "theme_color": "#0B3D91",
   "orientation": "portrait-primary",
+  "categories": ["education", "productivity", "utilities"],
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
@@ -19,6 +23,32 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Espace Membre & Carte QR",
+      "short_name": "Mon Espace",
+      "url": "/espace-membre",
+      "description": "Accéder à ma carte de membre dynamique et mon QR code d'accès"
+    },
+    {
+      "name": "Scanner Contrôle d'Accès",
+      "short_name": "Scanner QR",
+      "url": "/censeur",
+      "description": "Scanner les QR codes des membres pour valider l'entrée au laboratoire"
+    },
+    {
+      "name": "Médiathèque & Cours",
+      "short_name": "Médiathèque",
+      "url": "/mediatheque",
+      "description": "Consulter les ressources pédagogiques et cours techniques"
+    },
+    {
+      "name": "Organigramme du Bureau",
+      "short_name": "Bureau GIT",
+      "url": "/organigramme",
+      "description": "Découvrir la composition officielle du bureau exécutif"
     }
   ]
 }

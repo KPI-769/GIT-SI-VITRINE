@@ -9,7 +9,7 @@ import {
   ArrowRight, GraduationCap, Terminal, CheckCircle2,
   Code2, CircuitBoard, Network, Gauge, Layers,
   Microscope, Radio, Rocket, Star, Calendar, Users, Camera,
-  Activity, Binary, ShieldAlert
+  Activity, Binary, ShieldAlert, Menu, X
 } from 'lucide-react';
 
 import HeroGsap from '@/components/public/HeroGsap';
@@ -19,6 +19,7 @@ import AcademicSection from '@/components/public/AcademicSection';
 import OrganigrammeSection from '@/components/public/OrganigrammeSection';
 import MediathequeSection from '@/components/public/MediathequeSection';
 import NewsletterSection from '@/components/public/NewsletterSection';
+import MobileBottomBar from '@/components/public/MobileBottomBar';
 import ThemeToggle from '@/components/ThemeToggle';
 
 import {
@@ -92,6 +93,7 @@ const STATS = [
 
 export default function HomePage() {
   const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [events, setEvents] = useState<Event[]>(INITIAL_EVENTS);
   const [courses, setCourses] = useState<Course[]>(INITIAL_COURSES);
   const [users, setUsers] = useState<User[]>(INITIAL_USERS);
@@ -157,7 +159,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#0B0F19] text-slate-800 dark:text-slate-100 transition-colors duration-200">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#0B0F19] text-slate-800 dark:text-slate-100 transition-colors duration-200 pb-20 md:pb-0">
 
       {/* ══════════════════ ACCENT TOP LASER BAR ══════════════════ */}
       <div className="accent-bar" />
@@ -206,7 +208,7 @@ export default function HomePage() {
           </nav>
 
           {/* CTAs Navbar + Theme Toggle */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             {/* Theme Toggle Button */}
             <ThemeToggle />
 
@@ -220,12 +222,62 @@ export default function HomePage() {
               <span className="hidden xl:inline">LinkedIn</span>
             </a>
 
-            <Link href="/login" className="btn-nasa flex items-center gap-2 px-4 py-2.5 text-xs font-mono">
+            <Link href="/login" className="btn-nasa flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs font-mono">
               <Lock className="w-3.5 h-3.5" />
-              <span>Portail Membres</span>
+              <span className="hidden sm:inline">Portail Membres</span>
+              <span className="sm:hidden">Connexion</span>
             </Link>
+
+            {/* Hamburger Button Mobile */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition active:scale-95"
+              aria-label={mobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu de navigation'}
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5 text-red-500" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Menu Déroulant Mobile Plein Écran pour la Landing Page */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden border-t border-slate-200 dark:border-slate-800 bg-white/98 dark:bg-[#0B0F19]/98 backdrop-blur-2xl px-4 py-4 space-y-3 animate-fadeIn">
+            <div className="grid grid-cols-2 gap-2 text-xs font-mono font-semibold">
+              {[
+                ['#events', '🗓️ Événements'],
+                ['#projects', '🚀 Projets R&D'],
+                ['#academic', '🎓 Pôle Académique'],
+                ['#organigramme', '🏛️ Organigramme'],
+                ['#mediatheque', '📚 Médiathèque'],
+                ['#skills', '⚡ Technologies'],
+                ['#labo', '🔬 Laboratoire'],
+                ['/login', '🔒 Espace Membre'],
+              ].map(([href, label]) => (
+                <a
+                  key={href}
+                  href={href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 active:scale-98 transition flex items-center gap-1.5"
+                >
+                  <span>{label}</span>
+                </a>
+              ))}
+            </div>
+            <div className="pt-2 flex items-center justify-between border-t border-slate-200 dark:border-slate-800 text-[11px] font-mono text-slate-500">
+              <span>Division GIT · Douala</span>
+              <a
+                href="https://www.linkedin.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-blue-600 dark:text-blue-400 font-bold"
+              >
+                <LinkedInIcon className="w-3.5 h-3.5" />
+                <span>LinkedIn</span>
+              </a>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* ══════════════════ 1. HERO — DUAL THEME GSAP ══════════════════ */}
@@ -462,6 +514,9 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* Barre de navigation tactile PWA Mobile */}
+      <MobileBottomBar />
     </div>
   );
 }

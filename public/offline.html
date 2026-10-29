@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Hors connexion · GIT Saint Jérôme Polytechnique</title>
+  <meta name="theme-color" content="#050E1F">
+  <style>
+    :root {
+      --bg: #050E1F;
+      --card: #0D1629;
+      --border: rgba(255, 255, 255, 0.12);
+      --text: #F8FAFC;
+      --muted: #94A3B8;
+      --blue: #3B82F6;
+      --accent: #FC3D21;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .badge-laser {
+      width: 100%;
+      height: 3px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      background: linear-gradient(90deg, #1D4ED8 0%, #3B82F6 40%, #FC3D21 80%, #10B981 100%);
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2.25rem 1.75rem;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5);
+    }
+    .icon-box {
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      background: rgba(59, 130, 246, 0.12);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+      color: var(--blue);
+    }
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.6rem;
+      color: #FFFFFF;
+    }
+    p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.55;
+      margin-bottom: 1.5rem;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(252, 61, 33, 0.12);
+      border: 1px solid rgba(252, 61, 33, 0.3);
+      color: #FF6B4A;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 1.25rem;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--accent);
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      background: #0B3D91;
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 0.85rem 1.25rem;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 150ms ease, background 150ms ease;
+    }
+    .btn:active {
+      transform: scale(0.97);
+    }
+    .tip {
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+  <div class="badge-laser"></div>
+  <div class="card">
+    <div class="status-pill">
+      <span class="dot"></span>
+      <span>Mode Déconnecté</span>
+    </div>
+    
+    <div class="icon-box">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="1" y1="1" x2="23" y2="23"></line>
+        <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+        <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+        <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+        <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+        <line x1="12" y1="20" x2="12.01" y2="20"></line>
+      </svg>
+    </div>
+
+    <h1>Connexion Internet indisponible</h1>
+    <p>
+      La plateforme GIT n'arrive pas à joindre le serveur. Vos données précédemment chargées restent disponibles dans l'application.
+    </p>
+
+    <button class="btn" onclick="window.location.reload()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"></polyline>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+      </svg>
+      <span>Actualiser la page</span>
+    </button>
+
+    <div class="tip">
+      💡 <strong>Astuce PWA :</strong> Si vous avez déjà ouvert votre Carte Membre ou votre QR Code, il reste actif en cache local pour vos accès aux salles et au laboratoire.
+    </div>
+  </div>
+</body>
+</html>

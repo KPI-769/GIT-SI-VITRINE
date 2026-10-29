@@ -78,10 +78,16 @@ async function main() {
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
 
+  interface MinimalUser {
+    id: string;
+    email: string;
+    matricule: string;
+  }
+
   // Pré-chargement des emails existants pour éviter les findUnique réseau lents
-  const existingUsers = await prisma.user.findMany({ select: { id: true, email: true, matricule: true } });
-  const existingEmailMap = new Map(existingUsers.map(u => [u.email, u]));
-  const existingMatriculeMap = new Map(existingUsers.map(u => [u.matricule, u]));
+  const existingUsers: MinimalUser[] = await prisma.user.findMany({ select: { id: true, email: true, matricule: true } });
+  const existingEmailMap = new Map<string, MinimalUser>(existingUsers.map((u: MinimalUser) => [u.email, u]));
+  const existingMatriculeMap = new Map<string, MinimalUser>(existingUsers.map((u: MinimalUser) => [u.matricule, u]));
 
   await processInBatches(SJP_OFFICIAL_MEMBERS, 8, async (om, i) => {
     const parts = om.fullName.trim().split(' ');
@@ -90,7 +96,7 @@ async function main() {
     const niveauIndex = (i % 5) + 1;
     const niveau = `GI_${niveauIndex}`;
 
-    let user = existingEmailMap.get(om.email) || existingMatriculeMap.get(om.matricule);
+    let user: MinimalUser | null | undefined = existingEmailMap.get(om.email) || existingMatriculeMap.get(om.matricule);
     if (!user) {
       user = await prisma.user.upsert({
         where: { matricule: om.matricule },

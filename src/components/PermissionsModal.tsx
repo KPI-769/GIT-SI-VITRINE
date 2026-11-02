@@ -40,7 +40,6 @@ export default function PermissionsModal({
     // 1. Caméra
     try {
       if (navigator.permissions && navigator.permissions.query) {
-        // @ts-expect-error camera name in permission API
         const camQuery = await navigator.permissions.query({ name: 'camera' });
         setCameraStatus(camQuery.state as 'prompt' | 'granted' | 'denied');
         camQuery.onchange = () => {
@@ -52,7 +51,6 @@ export default function PermissionsModal({
     // 2. Microphone / Audio
     try {
       if (navigator.permissions && navigator.permissions.query) {
-        // @ts-expect-error microphone name in permission API
         const micQuery = await navigator.permissions.query({ name: 'microphone' });
         setMicStatus(micQuery.state as 'prompt' | 'granted' | 'denied');
         micQuery.onchange = () => {

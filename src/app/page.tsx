@@ -191,123 +191,127 @@ export default function HomePage() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#0B0F19] text-slate-800 dark:text-slate-100 transition-colors duration-200 pb-20 md:pb-0">
 
-      {/* ══════════════════ ACCENT TOP LASER BAR ══════════════════ */}
-      <div className="accent-bar" />
+      {/* ══════════════════ NAVBAR ══════════════════ */}
+      <header className="sticky top-0 z-40">
+        <div className="h-[3px] bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-400" />
+        <div className={`bg-white/90 dark:bg-[#0B0F19]/90 backdrop-blur-xl border-b transition-all duration-300 ${scrolled ? 'border-slate-200 dark:border-slate-800 shadow-sm' : 'border-slate-200/60 dark:border-slate-800/40'}`}>
+          <div className="max-w-7xl mx-auto px-3 sm:px-5 lg:px-8">
+            <div className="h-14 flex items-center justify-between gap-3">
 
-      {/* ══════════════════ NAVBAR POLYTECHNIQUE ══════════════════ */}
-      <header className={`navbar ${scrolled ? 'shadow-md border-b border-slate-200 dark:border-slate-800' : 'border-b border-slate-200/80 dark:border-slate-800/60'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-4 py-3">
+              {/* Logo */}
+              <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+                <div className="w-9 h-9 rounded-xl overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all duration-200">
+                  <Image src="/logo.jpg" alt="Logo GIT" width={36} height={36} className="object-contain" priority />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-extrabold text-sm sm:text-base tracking-tight text-slate-900 dark:text-white">GIT</span>
+                    <span className="px-1.5 py-px text-[9px] font-bold rounded-md bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-700/50">
+                      OFFICIEL
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-500 font-medium hidden sm:block leading-tight">
+                    Division Génie Infotronique · SJP
+                  </p>
+                </div>
+              </Link>
 
-          {/* Logo officiel */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-11 h-11 rounded-xl overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center shadow-xs transition-transform duration-300 group-hover:scale-105">
-              <Image src="/logo.jpg" alt="Logo GIT" width={44} height={44} className="object-contain" priority />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-lg tracking-tight font-display text-slate-900 dark:text-white">GIT</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30">
-                  OFFICIEL
-                </span>
-              </div>
-              <p className="text-xs font-mono text-slate-500 dark:text-slate-400 hidden sm:block">
-                Division Génie Infotronique · Saint Jérôme Polytechnique
-              </p>
-            </div>
-          </Link>
+              {/* Center nav (desktop) */}
+              <nav className="hidden lg:flex items-center gap-0.5 flex-1 justify-center">
+                {[
+                  ['#events', 'Événements'],
+                  ['#projects', 'Projets R&D'],
+                  ['#academic', 'Pôle Académique'],
+                  ['#organigramme', 'Organigramme'],
+                  ['#mediatheque', 'Médiathèque'],
+                  ['#skills', 'Technologies'],
+                  ['#labo', 'Laboratoire'],
+                ].map(([href, label]) => (
+                  <a
+                    key={href}
+                    href={href}
+                    className="px-3 py-2 rounded-xl text-[13px] font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all duration-200"
+                  >
+                    {label}
+                  </a>
+                ))}
+              </nav>
 
-          {/* Navigation thématique conforme au CDC */}
-          <nav className="hidden lg:flex items-center gap-6 text-xs font-mono font-semibold text-slate-600 dark:text-slate-300">
-            {[
-              ['#events', 'Événements'],
-              ['#projects', 'Projets R&D'],
-              ['#academic', 'Pôle Académique'],
-              ['#organigramme', 'Organigramme'],
-              ['#mediatheque', 'Médiathèque'],
-              ['#skills', 'Technologies'],
-              ['#labo', 'Laboratoire'],
-            ].map(([href, label]) => (
-              <a
-                key={href}
-                href={href}
-                className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-150"
-              >
-                {label}
-              </a>
-            ))}
-          </nav>
+              {/* Right actions */}
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <ThemeToggle />
 
-          {/* CTAs Navbar + Theme Toggle */}
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            {/* Theme Toggle Button */}
-            <ThemeToggle />
-
-            <a
-              href="https://www.linkedin.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-semibold border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition"
-            >
-              <LinkedInIcon className="w-3.5 h-3.5 text-[#0A66C2]" />
-              <span className="hidden xl:inline">LinkedIn</span>
-            </a>
-
-            <Link href="/login" className="btn-nasa flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs font-mono">
-              <Lock className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Portail Membres</span>
-              <span className="sm:hidden">Connexion</span>
-            </Link>
-
-            {/* Hamburger Button Mobile */}
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition active:scale-95"
-              aria-label={mobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu de navigation'}
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5 text-red-500" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Menu Déroulant Mobile Plein Écran pour la Landing Page */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-slate-200 dark:border-slate-800 bg-white/98 dark:bg-[#0B0F19]/98 backdrop-blur-2xl px-4 py-4 space-y-3 animate-fadeIn">
-            <div className="grid grid-cols-2 gap-2 text-xs font-mono font-semibold">
-              {[
-                ['#events', '🗓️ Événements'],
-                ['#projects', '🚀 Projets R&D'],
-                ['#academic', '🎓 Pôle Académique'],
-                ['#organigramme', '🏛️ Organigramme'],
-                ['#mediatheque', '📚 Médiathèque'],
-                ['#skills', '⚡ Technologies'],
-                ['#labo', '🔬 Laboratoire'],
-                ['/login', '🔒 Espace Membre'],
-              ].map(([href, label]) => (
                 <a
-                  key={href}
-                  href={href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 active:scale-98 transition flex items-center gap-1.5"
+                  href="https://www.linkedin.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden sm:flex w-9 h-9 items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:text-[#0A66C2] hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200"
+                  title="LinkedIn"
                 >
-                  <span>{label}</span>
+                  <LinkedInIcon className="w-4 h-4" />
                 </a>
-              ))}
-            </div>
-            <div className="pt-2 flex items-center justify-between border-t border-slate-200 dark:border-slate-800 text-[11px] font-mono text-slate-500">
-              <span>Division GIT · Douala</span>
-              <a
-                href="https://www.linkedin.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-blue-600 dark:text-blue-400 font-bold"
-              >
-                <LinkedInIcon className="w-3.5 h-3.5" />
-                <span>LinkedIn</span>
-              </a>
+
+                <Link
+                  href="/login"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-[13px] font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md transition-all duration-200"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Portail Membres</span>
+                  <span className="sm:hidden">Connexion</span>
+                </Link>
+
+                {/* Mobile hamburger */}
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="lg:hidden p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition active:scale-95"
+                  aria-label={mobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+                >
+                  {mobileMenuOpen ? <X className="w-5 h-5 text-red-500" /> : <Menu className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
           </div>
-        )}
+
+          {/* Mobile menu */}
+          {mobileMenuOpen && (
+            <div className="lg:hidden border-t border-slate-200/80 dark:border-slate-800 bg-white/98 dark:bg-[#0B0F19]/98 backdrop-blur-2xl px-4 py-4 space-y-3 animate-fadeIn">
+              <div className="grid grid-cols-2 gap-2 text-xs font-semibold">
+                {[
+                  ['#events', '🗓️ Événements'],
+                  ['#projects', '🚀 Projets R&D'],
+                  ['#academic', '🎓 Pôle Académique'],
+                  ['#organigramme', '🏛️ Organigramme'],
+                  ['#mediatheque', '📚 Médiathèque'],
+                  ['#skills', '⚡ Technologies'],
+                  ['#labo', '🔬 Laboratoire'],
+                  ['/login', '🔒 Espace Membre'],
+                ].map(([href, label]) => (
+                  <a
+                    key={href}
+                    href={href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 active:scale-98 transition flex items-center gap-1.5"
+                  >
+                    <span>{label}</span>
+                  </a>
+                ))}
+              </div>
+              <div className="pt-2 flex items-center justify-between border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500">
+                <span>Division GIT · Douala</span>
+                <a
+                  href="https://www.linkedin.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-blue-600 dark:text-blue-400 font-bold"
+                >
+                  <LinkedInIcon className="w-3.5 h-3.5" />
+                  <span>LinkedIn</span>
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
       </header>
 
       {/* ══════════════════ 1. HERO — DUAL THEME GSAP ══════════════════ */}

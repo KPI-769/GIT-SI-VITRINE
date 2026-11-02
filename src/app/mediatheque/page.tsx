@@ -23,9 +23,11 @@ import {
   GALLERY_CATEGORY_LABELS,
   INITIAL_EVENT_ALBUMS
 } from '@/lib/gallery-store';
+import { useAuth } from '@/context/AuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
 
 export default function MediathequeIndexPage() {
+  const { currentUser } = useAuth();
   const [albums, setAlbums] = useState<EventAlbum[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('TOUS');
   const [searchQuery, setSearchQuery] = useState('');
@@ -99,17 +101,43 @@ export default function MediathequeIndexPage() {
 
       {/* Contenu principal */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
+        {/* Barre de contrôle pour le Community Manager & Admin */}
+        {currentUser && (currentUser.role === 'COMMUNITY_MANAGER' || currentUser.role === 'ADMIN') && (
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-blue-500/10 border border-pink-300 dark:border-pink-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-pink-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Camera className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="font-bold text-slate-900 dark:text-white block">
+                  Mode Consultation Publique (Médiathèque)
+                </span>
+                <span className="text-[11px] text-slate-600 dark:text-slate-300">
+                  Vous êtes connecté en tant que <strong>{currentUser.prenom} {currentUser.nom}</strong> ({currentUser.role}). Vous pouvez téléverser et modérer les médias dans le panneau de contrôle.
+                </span>
+              </div>
+            </div>
+            <Link
+              href="/community-manager"
+              className="btn-nasa text-xs font-bold py-2 px-3.5 bg-pink-600 hover:bg-pink-700 text-white shrink-0 shadow-md flex items-center gap-1.5 self-start sm:self-auto"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Ouvrir la Gestion des Médias &rarr;</span>
+            </Link>
+          </div>
+        )}
+
         {/* En-tête de la Médiathèque */}
         <div className="card p-6 sm:p-10 bg-gradient-to-r from-blue-600/10 via-purple-600/5 to-pink-600/10 border border-blue-200/70 dark:border-blue-900/40 rounded-3xl shadow-sm space-y-3 text-center sm:text-left">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-500/30 text-blue-800 dark:text-blue-300 text-xs font-mono font-bold uppercase">
             <Folder className="w-3.5 h-3.5" />
-            <span>Portail des Archives Visuelles &bull; Saint Jérôme Polytechnique</span>
+            <span>Médiathèque Publique &bull; Galerie des Événements &bull; Saint Jérôme Polytechnique</span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white font-display">
             Tous les Dossiers d&apos;Événements
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-3xl leading-relaxed">
-            Explorez les reportages photographiques et vidéos classés par événement. Cliquez sur un dossier pour ouvrir sa page dédiée et consulter l&apos;ensemble de ses clichés en haute définition.
+            Espace de consultation et galerie multimédia de la Division Génie Infotronique (Hackathons, Assemblées, Projets, Remises de prix). Cliquez sur un dossier pour visualiser les clichés en haute définition et aimer vos médias favoris.
           </p>
         </div>
 

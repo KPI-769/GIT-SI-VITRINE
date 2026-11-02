@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   MONTH_NAMES, 
   CURRENT_MONTH, 
-  CURRENT_YEAR 
+  CURRENT_YEAR,
+  Project
 } from '@/lib/types';
 import DynamicQrCode from './DynamicQrCode';
 import { 
@@ -45,6 +46,19 @@ export default function MemberView({ user, onUpdateMacs }: MemberViewProps) {
   const { changePassword, requestPasswordReset } = useAuth();
   const [activeTab, setActiveTab] = useState<'CARD_QR' | 'MACS' | 'COTISATIONS' | 'ACTIVITES' | 'PENALTIES' | 'SECURITY'>('CARD_QR');
   const [qrType, setQrType] = useState<'ACCESS' | 'PAYMENT'>('ACCESS');
+
+  // Projets R&D synchronisés
+  const [allProjects, setAllProjects] = useState<Project[]>(INITIAL_PROJECTS);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('git_projects_v2');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) setAllProjects(parsed);
+      }
+    } catch {}
+  }, []);
   
   // États pour l'ajout d'adresse MAC
   const [newMacAddress, setNewMacAddress] = useState('');
@@ -515,9 +529,9 @@ export default function MemberView({ user, onUpdateMacs }: MemberViewProps) {
               </div>
             </div>
 
-            {INITIAL_PROJECTS.filter(p => p.contributors.some(c => c.userId === user.id)).length > 0 ? (
+            {allProjects.filter(p => p.contributors && p.contributors.some(c => c.userId === user.id)).length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {INITIAL_PROJECTS.filter(p => p.contributors.some(c => c.userId === user.id)).map(p => {
+                {allProjects.filter(p => p.contributors && p.contributors.some(c => c.userId === user.id)).map(p => {
                   const myRole = p.contributors.find(c => c.userId === user.id)?.roleInProject;
                   return (
                     <div key={p.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">

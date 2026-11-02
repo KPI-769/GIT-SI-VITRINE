@@ -234,8 +234,8 @@ export default function HeroGsap() {
   return (
     <section
       ref={containerRef}
-      className="relative overflow-hidden pt-20 sm:pt-28 pb-24 sm:pb-32 bg-slate-50 dark:bg-[#0B0F19] border-b border-slate-200 dark:border-slate-800 transition-colors duration-200"
-      style={{ minHeight: '82vh' }}
+      className="relative overflow-hidden pt-16 sm:pt-24 lg:pt-28 pb-16 sm:pb-24 lg:pb-32 bg-slate-50 dark:bg-[#0B0F19] border-b border-slate-200 dark:border-slate-800 transition-colors duration-200"
+      style={{ minHeight: '80vh' }}
     >
       {/* Canvas interactif */}
       <canvas
@@ -257,21 +257,21 @@ export default function HeroGsap() {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 items-center">
 
           {/* Colonne Gauche : Thèse & Typographie Institutionnelle */}
-          <div className="lg:col-span-7 space-y-7 text-center lg:text-left">
+          <div className="lg:col-span-7 space-y-5 sm:space-y-7 text-center lg:text-left">
             {/* Mission Badge & Telemetry Flag */}
-            <div className="inline-flex flex-wrap items-center gap-3 px-3.5 py-1.5 rounded-full border border-blue-200 dark:border-blue-500/30 bg-white/90 dark:bg-blue-950/40 backdrop-blur-md shadow-xs">
-              <span className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse shadow-xs" />
-                <span className="text-[11px] font-bold tracking-wider uppercase text-blue-700 dark:text-blue-300 font-mono">
+            <div className="inline-flex flex-wrap items-center gap-2 sm:gap-3 px-3 sm:px-3.5 py-1.5 rounded-full border border-blue-200 dark:border-blue-500/30 bg-white/90 dark:bg-blue-950/40 backdrop-blur-md shadow-xs">
+              <span className="flex items-center gap-1.5 sm:gap-2">
+                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse shadow-xs" />
+                <span className="text-[10px] sm:text-[11px] font-bold tracking-wider uppercase text-blue-700 dark:text-blue-300 font-mono">
                   SYS_CORE · 2026 EN SERVICE
                 </span>
               </span>
               <span className="text-slate-300 dark:text-slate-700 text-xs hidden sm:inline">|</span>
-              <span className="text-[11px] font-mono text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
-                <Activity className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-[10px] sm:text-[11px] font-mono text-slate-600 dark:text-slate-300 hidden sm:flex items-center gap-1.5">
+                <Activity className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>{currentTime || 'Saint Jérôme Polytechnique · Douala'}</span>
               </span>
             </div>
@@ -279,24 +279,28 @@ export default function HeroGsap() {
             {/* Titre Principal avec Stagger Accessible */}
             <h1
               ref={titleRef}
-              className="text-4xl sm:text-6xl lg:text-7xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.08] font-display"
+              className="text-3xl sm:text-5xl lg:text-7xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.08] font-display"
               aria-label="L'Ingénierie du Futur : Silicium, Firmware & Réseaux Cyber-Physiques"
             >
               <span className="inline-block hero-word">L&apos;Ingénierie</span>{' '}
               <span className="inline-block hero-word">du</span>{' '}
               <span className="inline-block hero-word text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-sky-300">
                 Futur
-              </span><br />
+              </span>
+              <span className="hidden sm:inline"><br /></span>
+              <span className="sm:hidden">{' '}</span>
               <span className="inline-block hero-word text-slate-900 dark:text-white">Silicium,</span>{' '}
               <span className="inline-block hero-word text-amber-600 dark:text-amber-400">Firmware</span>{' '}
-              <span className="inline-block hero-word text-slate-400 dark:text-slate-500">&amp;</span><br />
+              <span className="inline-block hero-word text-slate-400 dark:text-slate-500">&amp;</span>
+              <span className="hidden lg:inline"><br /></span>
+              <span className="lg:hidden">{' '}</span>
               <span className="inline-block hero-word text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-orange-600 to-blue-600 dark:from-amber-400 dark:via-orange-400 dark:to-blue-400">
                 Systèmes Cyber-Physiques
               </span>
             </h1>
 
             {/* Accroche Technique Délibérée */}
-            <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
+            <p className="text-sm sm:text-base lg:text-lg text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
               La <strong className="text-blue-600 dark:text-blue-400 font-semibold">Division Génie Infotronique (GIT)</strong> de Saint Jérôme Polytechnique conçoit les infrastructures de haute précision : micro-électronique ARM/FPGA bare-metal, réseaux industriels Wi-Fi 6 sécurisés et plateformes logicielles certifiées.
             </p>
 
@@ -339,8 +343,8 @@ export default function HeroGsap() {
             </div>
           </div>
 
-          {/* Colonne Droite : Module Focal Holographique */}
-          <div ref={cardRef} className="lg:col-span-5 flex justify-center">
+          {/* Colonne Droite : Module Focal Holographique — masqué sous lg */}
+          <div ref={cardRef} className="hidden lg:flex lg:col-span-5 justify-center">
             <div className="cyber-panel relative w-full max-w-md p-6 sm:p-8 rounded-3xl bg-white/95 dark:bg-[#111827]/90 border border-slate-200 dark:border-slate-800 shadow-xl group">
               {/* Scanline Effect */}
               <div

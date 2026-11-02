@@ -384,10 +384,19 @@ export default function CommunityManagerView({ currentUser }: CommunityManagerVi
             </p>
           </div>
 
-          <div className="shrink-0 w-full md:w-auto">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0 w-full md:w-auto">
+            <a
+              href="/mediatheque"
+              className="px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 border border-slate-300 shadow-xs transition"
+              title="Ouvrir la Médiathèque publique dans la même fenêtre"
+            >
+              <Eye className="w-4 h-4 text-slate-500" />
+              <span>Voir Médiathèque Publique</span>
+            </a>
+
             <button
               onClick={handleOpenCreateAlbum}
-              className="w-full md:w-auto px-4 sm:px-5 py-2.5 sm:py-3 bg-pink-600 hover:bg-pink-700 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition cursor-pointer"
+              className="px-4 sm:px-5 py-2.5 sm:py-3 bg-pink-600 hover:bg-pink-700 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition cursor-pointer"
             >
               <FolderPlus className="w-4 h-4" />
               <span>Créer un Dossier d&apos;Événement</span>

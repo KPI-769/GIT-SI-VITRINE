@@ -35,7 +35,80 @@ export const INITIAL_PAYMENTS: Payment[] = [];
 
 export const INITIAL_PENALTIES: Penalty[] = [];
 
-export const INITIAL_PROJECTS: Project[] = [];
+export const INITIAL_PROJECTS: Project[] = [
+  {
+    id: 'proj-01',
+    title: 'Station Météo & Télémétrie Industrielle IoT',
+    slug: 'station-meteo-telemetrie-iot',
+    description: 'Système autonome de mesure environnementale (température, humidité, qualité de l\'air) avec transmission LoRaWAN longue portée et dashboard temps réel.',
+    category: 'Réseaux & IoT',
+    githubUrl: 'https://github.com/git-community/station-iot-lorawan',
+    demoUrl: 'https://iot.git-sjp.cm',
+    coverImage: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80',
+    featured: true,
+    technologies: ['ESP32', 'LoRaWAN', 'FreeRTOS', 'MQTT', 'Next.js', 'Grafana'],
+    membersCount: 4,
+    contributors: [
+      { id: 'c1', projectId: 'proj-01', userId: 'git-007', roleInProject: 'Lead Firmware ESP32', name: 'MBIAKOP Junior' },
+      { id: 'c2', projectId: 'proj-01', userId: 'git-013', roleInProject: 'Architecture LoRaWAN', name: 'MPOPO Antoinne' },
+      { id: 'c3', projectId: 'proj-01', userId: 'git-006', roleInProject: 'Intégration Passerelle', name: 'EKANGO Paul' },
+      { id: 'c4', projectId: 'proj-01', userId: 'git-001', roleInProject: 'Supervision & Déploiement', name: 'KPWANDA Yvan' }
+    ]
+  },
+  {
+    id: 'proj-02',
+    title: 'Contrôleur d\'Accès Dynamique & Passerelle RouterOS',
+    slug: 'controleur-acces-routeros',
+    description: 'Infrastructure de sécurité physique et réseau couplant des badges QR tournants chiffrés à un filtrage d\'adresses MAC automatique sur switch Mikrotik.',
+    category: 'Systèmes Embarqués',
+    githubUrl: 'https://github.com/git-community/mikrotik-gatekeeper',
+    demoUrl: 'https://access.git-sjp.cm',
+    coverImage: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80',
+    featured: true,
+    technologies: ['MikroTik API', 'TypeScript', 'Cryptography', 'Next.js PWA', 'Docker'],
+    membersCount: 3,
+    contributors: [
+      { id: 'c5', projectId: 'proj-02', userId: 'git-006', roleInProject: 'Ingénieur Réseau Mikrotik', name: 'EKANGO Paul' },
+      { id: 'c6', projectId: 'proj-02', userId: 'git-002', roleInProject: 'Cryptographie & QR Engine', name: 'ABDALLAH Wahab' },
+      { id: 'c7', projectId: 'proj-02', userId: 'git-001', roleInProject: 'Coordination Technique', name: 'KPWANDA Yvan' }
+    ]
+  },
+  {
+    id: 'proj-03',
+    title: 'Banc d\'Essai Asservissement & Modbus SCADA',
+    slug: 'banc-essai-scada-modbus',
+    description: 'Banc d\'évaluation pour régulateurs PID industriels avec bus RS-485 / Modbus TCP, acquisition de données haute cadence et interface IHM tactile.',
+    category: 'Automatique & Robotique',
+    githubUrl: 'https://github.com/git-community/scada-pid-modbus',
+    coverImage: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
+    featured: false,
+    technologies: ['STM32F4', 'Modbus TCP', 'RS-485', 'Python Qt', 'Matlab Simulink'],
+    membersCount: 2,
+    contributors: [
+      { id: 'c8', projectId: 'proj-03', userId: 'git-007', roleInProject: 'Automatique & PID', name: 'MBIAKOP Junior' },
+      { id: 'c9', projectId: 'proj-03', userId: 'git-012', roleInProject: 'Électronique de puissance', name: 'FOTSO Jean' }
+    ]
+  },
+  {
+    id: 'proj-04',
+    title: 'Plateforme PWA & Système de Gestion de la Division',
+    slug: 'plateforme-pwa-division-git',
+    description: 'Application PWA complète pour le suivi des cotisations, les cartes de membres hors-ligne, la médiathèque multimédia et la gestion des sanctions.',
+    category: 'Logiciel & Fullstack',
+    githubUrl: 'https://github.com/git-community/git-platform',
+    demoUrl: 'https://git-community.cm',
+    coverImage: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80',
+    featured: true,
+    technologies: ['Next.js 16', 'React 19', 'Tailwind CSS', 'Prisma ORM', 'PWA ServiceWorker', 'MySQL'],
+    membersCount: 4,
+    contributors: [
+      { id: 'c10', projectId: 'proj-04', userId: 'git-001', roleInProject: 'Chef de Projet & Dev', name: 'KPWANDA Yvan' },
+      { id: 'c11', projectId: 'proj-04', userId: 'git-003', roleInProject: 'Administration & Qualité', name: 'MAWADJOU Danielle' },
+      { id: 'c12', projectId: 'proj-04', userId: 'git-017', roleInProject: 'Direction Artistique & Médias', name: 'KOUOH ETEKI Freddy' },
+      { id: 'c13', projectId: 'proj-04', userId: 'git-004', roleInProject: 'Comptabilité & Trésorerie', name: 'LEKEUFACK Anne' }
+    ]
+  }
+];
 
 export const INITIAL_COURSES: Course[] = [];
 

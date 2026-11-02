@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import AppHeader from '@/components/AppHeader';
-import { Course, CourseStatus, User, Certification } from '@/lib/types';
-import { INITIAL_COURSES } from '@/lib/store';
+import { Course, CourseStatus, User, Certification, Project, ProjectContributor } from '@/lib/types';
+import { INITIAL_COURSES, INITIAL_PROJECTS } from '@/lib/store';
 import {
   GraduationCap,
   Plus,
@@ -20,7 +20,13 @@ import {
   AlertCircle,
   Search,
   UserCheck,
-  Cpu
+  Cpu,
+  FolderGit2,
+  ExternalLink,
+  Star,
+  Users,
+  Code2,
+  Sparkles
 } from 'lucide-react';
 
 const STATUS_META: Record<CourseStatus, { label: string; badge: string }> = {
@@ -29,8 +35,16 @@ const STATUS_META: Record<CourseStatus, { label: string; badge: string }> = {
   COMPLETED: { label: 'Terminé', badge: 'bg-emerald-100 text-emerald-900 border-emerald-300' }
 };
 
+const PROJECT_CATEGORIES = [
+  'Systèmes Embarqués',
+  'Logiciel & Fullstack',
+  'Réseaux & IoT',
+  'Automatique & Robotique'
+] as const;
+
 const COURSE_STORAGE_KEY = 'git_courses_v2';
 const CERTIF_STORAGE_KEY = 'git_certifications_v2';
+const PROJECT_STORAGE_KEY = 'git_projects_v2';
 
 function loadCourses(): Course[] {
   if (typeof window === 'undefined') return INITIAL_COURSES;
@@ -60,6 +74,21 @@ function saveCertifications(certs: Certification[]) {
   localStorage.setItem(CERTIF_STORAGE_KEY, JSON.stringify(certs));
 }
 
+function loadProjects(): Project[] {
+  if (typeof window === 'undefined') return INITIAL_PROJECTS;
+  try {
+    const stored = localStorage.getItem(PROJECT_STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  return INITIAL_PROJECTS;
+}
+
+function saveProjects(projects: Project[]) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(projects));
+  window.dispatchEvent(new Event('git_projects_updated'));
+}
+
 const EMPTY_COURSE: Omit<Course, 'id'> = {
   title: '',
   description: '',
@@ -70,17 +99,41 @@ const EMPTY_COURSE: Omit<Course, 'id'> = {
   level: 'Tous Niveaux'
 };
 
+const EMPTY_PROJECT: Omit<Project, 'id'> = {
+  title: '',
+  slug: '',
+  description: '',
+  category: 'Systèmes Embarqués',
+  githubUrl: '',
+  demoUrl: '',
+  coverImage: '',
+  featured: false,
+  technologies: ['C/C++', 'FreeRTOS'],
+  membersCount: 1,
+  contributors: []
+};
+
 export default function FormationsAdminPage() {
   const { isInitialized, currentUser, allUsers } = useAuth();
   const router = useRouter();
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [certifications, setCertifications] = useState<Certification[]>([]);
-  const [activeTab, setActiveTab] = useState<'courses' | 'certifs'>('courses');
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [activeTab, setActiveTab] = useState<'courses' | 'projects' | 'certifs'>('courses');
 
+  // Course modal state
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Course | null>(null);
   const [form, setForm] = useState<Omit<Course, 'id'>>(EMPTY_COURSE);
+
+  // Project modal state
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [projectForm, setProjectForm] = useState<Omit<Project, 'id'>>(EMPTY_PROJECT);
+  const [techInput, setTechInput] = useState('');
+  const [contributorSearch, setContributorSearch] = useState('');
+  const [newContributorRole, setNewContributorRole] = useState('Contributeur R&D');
 
   // Certification modal state
   const [isCertifOpen, setIsCertifOpen] = useState(false);
@@ -94,16 +147,27 @@ export default function FormationsAdminPage() {
   useEffect(() => {
     setCourses(loadCourses());
     setCertifications(loadCertifications());
+    setProjects(loadProjects());
 
     fetch('/api/courses')
       .then((res) => res.json())
       .then((data) => {
-        if (data.success && Array.isArray(data.courses)) {
+        if (data.success && Array.isArray(data.courses) && data.courses.length > 0) {
           setCourses(data.courses);
           saveCourses(data.courses);
         }
       })
       .catch((err) => console.error('Erreur chargement /api/courses:', err));
+
+    fetch('/api/projects')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.projects) && data.projects.length > 0) {
+          setProjects(data.projects);
+          saveProjects(data.projects);
+        }
+      })
+      .catch((err) => console.error('Erreur chargement /api/projects:', err));
   }, []);
 
   useEffect(() => {
@@ -112,7 +176,7 @@ export default function FormationsAdminPage() {
 
   if (!isInitialized || !currentUser) return null;
 
-  // RBAC guard: only FORMATION (MBIAKOP Junior titulaire + MPOPO Antoinne adjoint) and ADMIN
+  // RBAC guard: only FORMATION and ADMIN
   const canAccess = currentUser.role === 'FORMATION' || currentUser.role === 'ADMIN';
 
   if (!canAccess) {
@@ -147,49 +211,44 @@ export default function FormationsAdminPage() {
   };
 
   // Cours CRUD
-  const handleSave = async () => {
+  const handleSaveCourse = async () => {
     if (!form.title.trim()) return;
 
     if (editTarget) {
-      // Modification
-      const updated = courses.map(c => c.id === editTarget.id ? { ...form, id: editTarget.id } : c);
+      const updated = courses.map(c => c.id === editTarget.id ? { ...c, ...form } : c);
       setCourses(updated);
       saveCourses(updated);
-      showToast(`Formation « ${form.title} » mise à jour.`);
+      showToast('Formation modifiée avec succès.');
 
-      try {
-        await fetch(`/api/courses/${editTarget.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
-        });
-      } catch (err) {
-        console.error('Erreur sync PATCH /api/courses:', err);
-      }
+      fetch(`/api/courses/${editTarget.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      }).catch(err => console.error('Erreur sync PATCH /api/courses:', err));
     } else {
-      // Création
-      const tempId = `crs_${Date.now()}`;
-      const tempCourse: Course = { ...form, id: tempId };
-      const updated = [tempCourse, ...courses];
+      const newCourse: Course = {
+        id: `course_${Date.now()}`,
+        ...form
+      };
+      const updated = [newCourse, ...courses];
       setCourses(updated);
       saveCourses(updated);
-      showToast(`Formation « ${form.title} » enregistrée dans la base !`);
+      showToast('Nouvelle formation créée.');
 
-      try {
-        const res = await fetch('/api/courses', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
-        });
-        const data = await res.json();
-        if (data.success && data.course) {
-          const synced = updated.map(c => c.id === tempId ? { ...c, id: data.course.id } : c);
-          setCourses(synced);
-          saveCourses(synced);
-        }
-      } catch (err) {
-        console.error('Erreur sync POST /api/courses:', err);
-      }
+      fetch('/api/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.course?.id) {
+            const synced = updated.map(c => c.id === newCourse.id ? { ...c, id: data.course.id } : c);
+            setCourses(synced);
+            saveCourses(synced);
+          }
+        })
+        .catch(err => console.error('Erreur sync POST /api/courses:', err));
     }
 
     setIsAddOpen(false);
@@ -197,46 +256,153 @@ export default function FormationsAdminPage() {
     setForm(EMPTY_COURSE);
   };
 
-  const handleEdit = (c: Course) => {
-    setEditTarget(c);
-    setForm({
-      title: c.title,
-      description: c.description,
-      status: c.status,
-      instructor: c.instructor || '',
-      hoursCount: c.hoursCount || 20,
-      startDate: c.startDate ? c.startDate.slice(0, 10) : '',
-      level: c.level
-    });
-    setIsAddOpen(true);
-  };
-
-  const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`Supprimer la formation « ${title} » ?`)) return;
+  const handleDeleteCourse = async (id: string, title: string) => {
+    if (!confirm(`Supprimer définitivement la formation « ${title} » ?`)) return;
     const updated = courses.filter(c => c.id !== id);
     setCourses(updated);
     saveCourses(updated);
-    showToast(`Formation « ${title} » supprimée.`);
+    showToast('Formation supprimée.');
 
-    try {
-      await fetch(`/api/courses/${id}`, { method: 'DELETE' });
-    } catch (err) {
-      console.error('Erreur DELETE /api/courses:', err);
+    fetch(`/api/courses/${id}`, { method: 'DELETE' })
+      .catch(err => console.error('Erreur sync DELETE /api/courses:', err));
+  };
+
+  // Projets CRUD
+  const openNewProject = () => {
+    setEditingProject(null);
+    setProjectForm(EMPTY_PROJECT);
+    setTechInput('ESP32, Next.js, FreeRTOS');
+    setIsProjectModalOpen(true);
+  };
+
+  const openEditProject = (p: Project) => {
+    setEditingProject(p);
+    setProjectForm({
+      title: p.title,
+      slug: p.slug,
+      description: p.description,
+      category: p.category,
+      githubUrl: p.githubUrl || '',
+      demoUrl: p.demoUrl || '',
+      coverImage: p.coverImage || '',
+      featured: Boolean(p.featured),
+      technologies: p.technologies || [],
+      membersCount: p.membersCount || p.contributors?.length || 1,
+      contributors: p.contributors || []
+    });
+    setTechInput((p.technologies || []).join(', '));
+    setIsProjectModalOpen(true);
+  };
+
+  const handleSaveProject = async () => {
+    if (!projectForm.title.trim() || !projectForm.description.trim()) {
+      showToast('Le titre et la description du projet sont obligatoires.');
+      return;
     }
+
+    const techArray = techInput
+      .split(',')
+      .map(t => t.trim())
+      .filter(t => t.length > 0);
+
+    const slug = String(projectForm.title)
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
+
+    const projectPayload = {
+      ...projectForm,
+      slug,
+      technologies: techArray,
+      membersCount: projectForm.contributors.length || 1
+    };
+
+    if (editingProject) {
+      const updated = projects.map(p => p.id === editingProject.id ? { ...p, ...projectPayload } : p);
+      setProjects(updated);
+      saveProjects(updated);
+      showToast('Projet R&D mis à jour.');
+
+      fetch(`/api/projects/${editingProject.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(projectPayload),
+      }).catch(err => console.error('Erreur sync PATCH /api/projects:', err));
+    } else {
+      const newProj: Project = {
+        id: `proj-${Date.now()}`,
+        ...projectPayload
+      };
+      const updated = [newProj, ...projects];
+      setProjects(updated);
+      saveProjects(updated);
+      showToast('Nouveau projet R&D ajouté.');
+
+      fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(projectPayload),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.project?.id) {
+            const synced = updated.map(p => p.id === newProj.id ? { ...p, id: data.project.id } : p);
+            setProjects(synced);
+            saveProjects(synced);
+          }
+        })
+        .catch(err => console.error('Erreur sync POST /api/projects:', err));
+    }
+
+    setIsProjectModalOpen(false);
+    setEditingProject(null);
   };
 
-  const handleStatusChange = (id: string, status: CourseStatus) => {
-    const updated = courses.map(c => c.id === id ? { ...c, status } : c);
-    setCourses(updated);
-    saveCourses(updated);
-    showToast('Statut mis à jour.');
+  const handleDeleteProject = async (id: string, title: string) => {
+    if (!confirm(`Supprimer définitivement le projet R&D « ${title} » ?`)) return;
+    const updated = projects.filter(p => p.id !== id);
+    setProjects(updated);
+    saveProjects(updated);
+    showToast('Projet R&D supprimé.');
+
+    fetch(`/api/projects/${id}`, { method: 'DELETE' })
+      .catch(err => console.error('Erreur sync DELETE /api/projects:', err));
   };
 
-  // Certifications
-  const openCertifModal = (course: Course) => {
+  const addContributorToProject = (user: User) => {
+    if (projectForm.contributors.some(c => c.userId === user.id)) {
+      showToast(`${user.prenom} ${user.nom} est déjà contributeur.`);
+      return;
+    }
+    const newContrib: ProjectContributor = {
+      id: `c_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      projectId: editingProject ? editingProject.id : 'temp',
+      userId: user.id,
+      name: `${user.prenom} ${user.nom}`,
+      matricule: user.matricule,
+      roleInProject: newContributorRole || 'Développeur Firmware'
+    };
+    setProjectForm(prev => ({
+      ...prev,
+      contributors: [...prev.contributors, newContrib]
+    }));
+    setContributorSearch('');
+  };
+
+  const removeContributorFromProject = (userId: string) => {
+    setProjectForm(prev => ({
+      ...prev,
+      contributors: prev.contributors.filter(c => c.userId !== userId)
+    }));
+  };
+
+  // Certification modal handlers
+  const openDeliverModal = (course: Course) => {
     setCertifCourse(course);
-    setMemberSearch('');
     setSelectedMember(null);
+    setMemberSearch('');
     setIsCertifOpen(true);
   };
 
@@ -288,189 +454,432 @@ export default function FormationsAdminPage() {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 p-4 bg-slate-900 text-white rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700">
+        <div className="fixed bottom-6 right-6 z-50 p-4 bg-slate-900 text-white rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700 animate-fadeIn">
           <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
           <span className="text-xs font-bold">{toast}</span>
         </div>
       )}
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 anim-fade-in">
-        {/* Header */}
+        {/* Header de la page */}
         <section className="card p-6 border-l-4 border-l-amber-500 shadow-md bg-white flex flex-col md:flex-row md:items-center justify-between gap-5">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold mb-3">
-              <GraduationCap className="w-3.5 h-3.5" />
+              <GraduationCap className="w-3.5 h-3.5 text-amber-600" />
               <span>Pôle Formation, Projets R&amp;D &amp; Certifications · Mandat 2026/2027</span>
             </div>
-            <h1 className="text-2xl font-black text-slate-900 font-display">
-              Gestion des Formations, Projets &amp; Certifications
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 font-display">
+              Gestion des Formations &amp; Projets R&amp;D
             </h1>
-            <p className="text-xs text-slate-600 mt-1.5 max-w-2xl">
-              Vous êtes <strong>{currentUser.prenom} {currentUser.nom}</strong> — {currentUser.poste || 'Responsable Formation'}. Organisez les formations, délivrez des certifications officielles aux membres étudiants.
+            <p className="text-xs sm:text-sm text-slate-600 mt-1.5 max-w-2xl leading-relaxed">
+              Vous êtes <strong>{currentUser.prenom} {currentUser.nom}</strong> ({currentUser.role}). Coordonnez les ateliers théoriques, les projets d&apos;ingénierie R&amp;D et délivrez les accréditations officielles.
             </p>
           </div>
 
-          <button
-            onClick={() => { setEditTarget(null); setForm(EMPTY_COURSE); setIsAddOpen(true); }}
-            className="btn-nasa text-xs font-bold flex items-center gap-2 cursor-pointer shadow-md shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Nouvelle Formation</span>
-          </button>
+          <div className="flex items-center gap-2.5 shrink-0">
+            {activeTab === 'courses' && (
+              <button
+                onClick={() => { setEditTarget(null); setForm(EMPTY_COURSE); setIsAddOpen(true); }}
+                className="btn-nasa text-xs font-bold flex items-center gap-2 cursor-pointer shadow-md"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Nouvelle Formation</span>
+              </button>
+            )}
+
+            {activeTab === 'projects' && (
+              <button
+                onClick={openNewProject}
+                className="btn-nasa text-xs font-bold flex items-center gap-2 cursor-pointer shadow-md bg-amber-600 hover:bg-amber-700 text-white"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Nouveau Projet R&amp;D</span>
+              </button>
+            )}
+          </div>
         </section>
 
-        {/* Stats */}
+        {/* Statistiques Rapides */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {(['PLANNED', 'IN_PROGRESS', 'COMPLETED'] as CourseStatus[]).map(s => {
-            const count = courses.filter(c => c.status === s).length;
-            const meta = STATUS_META[s];
-            return (
-              <div key={s} className="card p-4 bg-white border border-slate-200">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">{meta.label}</span>
-                <p className="text-2xl font-black text-slate-900 mt-0.5">{count}</p>
-              </div>
-            );
-          })}
+          <div className="card p-4 bg-white border border-slate-200">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Formations Totales</span>
+            <p className="text-2xl font-black text-slate-900 mt-0.5">{courses.length}</p>
+          </div>
+          <div className="card p-4 bg-white border border-slate-200">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Projets R&amp;D Actifs</span>
+            <p className="text-2xl font-black text-blue-600 mt-0.5">{projects.length}</p>
+          </div>
+          <div className="card p-4 bg-white border border-slate-200">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Projets En Vedette</span>
+            <p className="text-2xl font-black text-amber-600 mt-0.5">{projects.filter(p => p.featured).length}</p>
+          </div>
           <div className="card p-4 bg-amber-50 border border-amber-200">
             <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider block">Certifications Délivrées</span>
             <p className="text-2xl font-black text-amber-900 mt-0.5">{certifications.length}</p>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 w-fit">
+        {/* Sélecteur d'Onglets */}
+        <div className="flex flex-wrap gap-1 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 w-full sm:w-fit">
           <button
             onClick={() => setActiveTab('courses')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition cursor-pointer ${activeTab === 'courses' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+              activeTab === 'courses' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
           >
-            <span className="flex items-center gap-1.5"><BookOpen className="w-3.5 h-3.5" /> Formations ({courses.length})</span>
+            <BookOpen className="w-4 h-4 text-amber-600" />
+            <span>Formations ({courses.length})</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab('projects')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+              activeTab === 'projects' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <FolderGit2 className="w-4 h-4 text-blue-600" />
+            <span>Projets R&amp;D &amp; Labo ({projects.length})</span>
+          </button>
+
           <button
             onClick={() => setActiveTab('certifs')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition cursor-pointer ${activeTab === 'certifs' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+              activeTab === 'certifs' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
           >
-            <span className="flex items-center gap-1.5"><Award className="w-3.5 h-3.5" /> Certifications Délivrées ({certifications.length})</span>
+            <Award className="w-4 h-4 text-emerald-600" />
+            <span>Certifications ({certifications.length})</span>
           </button>
         </div>
 
-        {/* Tab: Formations */}
+        {/* ════════════ ONGLET 1: FORMATIONS ════════════ */}
         {activeTab === 'courses' && (
-          <div className="card p-6 bg-white border border-slate-300 shadow-sm space-y-3">
+          <div className="card p-6 bg-white border border-slate-300 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <h2 className="text-lg font-bold text-slate-900 font-display flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-amber-600" />
+                <span>Modules Académiques &amp; Ateliers Pratiques</span>
+              </h2>
+              <span className="text-xs text-slate-500 font-mono">{courses.length} formation(s) enregistrée(s)</span>
+            </div>
+
             {courses.length === 0 ? (
               <div className="py-12 text-center text-xs text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                <Cpu className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                <p className="font-semibold text-slate-700">Aucune formation enregistrée</p>
-                <p className="mt-1">Créez votre première formation pour commencer.</p>
+                <GraduationCap className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                <p className="font-semibold text-slate-700">Aucune formation enregistrée.</p>
+                <button
+                  onClick={() => { setEditTarget(null); setForm(EMPTY_COURSE); setIsAddOpen(true); }}
+                  className="mt-3 text-xs text-amber-700 font-bold underline cursor-pointer"
+                >
+                  Créer la première formation
+                </button>
               </div>
             ) : (
-              courses.map(course => {
-                const count = certifsByCourseName(course.title).length;
-                return (
-                  <div key={course.id} className="p-4 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-white hover:border-amber-200 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="space-y-1.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${STATUS_META[course.status].badge}`}>
-                          {STATUS_META[course.status].label}
-                        </span>
-                        <span className="text-[10px] font-semibold text-slate-500 bg-slate-200 px-2 py-0.5 rounded">
-                          {course.level}
-                        </span>
-                        {course.hoursCount && (
-                          <span className="text-[10px] text-slate-500 flex items-center gap-0.5">
-                            <Clock className="w-3 h-3" /> {course.hoursCount}h
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {courses.map(course => {
+                  const meta = STATUS_META[course.status];
+                  const certCount = certifsByCourseName(course.title).length;
+                  return (
+                    <div key={course.id} className="p-5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-amber-300 transition space-y-3 flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${meta.badge}`}>
+                            {meta.label}
                           </span>
-                        )}
-                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 flex items-center gap-1">
-                          <Award className="w-3 h-3" /> {count} certif{count > 1 ? 's' : ''} délivrée{count > 1 ? 's' : ''}
-                        </span>
+                          <span className="text-[10px] font-mono text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
+                            {course.level || 'Tous Niveaux'}
+                          </span>
+                        </div>
+                        <h3 className="font-bold text-slate-900 text-sm leading-snug">{course.title}</h3>
+                        <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">{course.description}</p>
                       </div>
-                      <h3 className="font-bold text-slate-900 text-sm">{course.title}</h3>
-                      {course.instructor && (
-                        <p className="text-[11px] text-slate-500">Intervenant : <strong className="text-slate-700">{course.instructor}</strong></p>
-                      )}
-                    </div>
 
-                    <div className="flex flex-wrap items-center gap-2 shrink-0">
-                      <select
-                        value={course.status}
-                        onChange={e => handleStatusChange(course.id, e.target.value as CourseStatus)}
-                        className="bg-white border border-slate-300 text-slate-800 text-xs font-semibold rounded-lg px-2.5 py-1 focus:outline-none focus:border-amber-400 cursor-pointer"
-                      >
-                        <option value="PLANNED">Planifié</option>
-                        <option value="IN_PROGRESS">En cours</option>
-                        <option value="COMPLETED">Terminé</option>
-                      </select>
-                      <button
-                        onClick={() => openCertifModal(course)}
-                        title="Délivrer une certification"
-                        className="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold flex items-center gap-1 cursor-pointer transition"
-                      >
-                        <Award className="w-3.5 h-3.5" /> Certifier
-                      </button>
-                      <button onClick={() => handleEdit(course)} className="p-1.5 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-amber-700 cursor-pointer transition">
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => handleDelete(course.id, course.title)} className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 cursor-pointer transition">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="pt-2 border-t border-slate-200 space-y-2 text-xs text-slate-600">
+                        {course.instructor && (
+                          <div className="flex items-center gap-1.5 text-[11px]">
+                            <span className="text-slate-400 font-bold">Intervenant :</span>
+                            <span className="font-semibold text-slate-800">{course.instructor}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between text-[11px] text-slate-500">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            {course.hoursCount ? `${course.hoursCount}h de cours` : '20h'}
+                          </span>
+                          <span className="text-amber-700 font-bold flex items-center gap-1">
+                            <Award className="w-3.5 h-3.5" />
+                            {certCount} certifié(s)
+                          </span>
+                        </div>
+
+                        <div className="flex gap-1.5 pt-2">
+                          <button
+                            onClick={() => openDeliverModal(course)}
+                            className="flex-1 py-1.5 px-2 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-xs font-bold border border-amber-200 transition cursor-pointer flex items-center justify-center gap-1"
+                          >
+                            <Award className="w-3.5 h-3.5 text-amber-600" />
+                            <span>Certifier</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditTarget(course);
+                              setForm({
+                                title: course.title,
+                                description: course.description,
+                                status: course.status,
+                                instructor: course.instructor || '',
+                                hoursCount: course.hoursCount || 20,
+                                startDate: course.startDate ? course.startDate.slice(0, 10) : '',
+                                level: course.level || 'Tous Niveaux'
+                              });
+                              setIsAddOpen(true);
+                            }}
+                            className="p-1.5 bg-white hover:bg-slate-100 text-slate-600 rounded-lg border border-slate-200 transition cursor-pointer"
+                            title="Modifier"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCourse(course.id, course.title)}
+                            className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg border border-rose-200 transition cursor-pointer"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                );
-              })
+                  );
+                })}
+              </div>
             )}
           </div>
         )}
 
-        {/* Tab: Certifications Délivrées */}
+        {/* ════════════ ONGLET 2: PROJETS R&D ════════════ */}
+        {activeTab === 'projects' && (
+          <div className="card p-6 bg-white border border-slate-300 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-100">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 font-display flex items-center gap-2">
+                  <FolderGit2 className="w-5 h-5 text-blue-600" />
+                  <span>Projets d&apos;Ingénierie &amp; R&amp;D Laboratoire</span>
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Les projets créés ici sont visibles sur le Showcase de la vitrine publique et attribués aux membres dans leur espace individuel.
+                </p>
+              </div>
+
+              <button
+                onClick={openNewProject}
+                className="btn-nasa text-xs font-bold flex items-center gap-1.5 cursor-pointer shrink-0 self-start sm:self-auto"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Nouveau Projet</span>
+              </button>
+            </div>
+
+            {projects.length === 0 ? (
+              <div className="py-12 text-center text-xs text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                <FolderGit2 className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                <p className="font-semibold text-slate-700">Aucun projet R&amp;D enregistré.</p>
+                <button
+                  onClick={openNewProject}
+                  className="mt-3 text-xs text-blue-700 font-bold underline cursor-pointer"
+                >
+                  Ajouter le premier projet R&amp;D
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {projects.map(project => (
+                  <div
+                    key={project.id}
+                    className="p-5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-blue-300 transition space-y-4 flex flex-col justify-between"
+                  >
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                          {project.category}
+                        </span>
+                        {project.featured && (
+                          <span className="flex items-center gap-1 text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full">
+                            <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                            <span>En vedette</span>
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 className="font-bold text-slate-900 text-base leading-snug font-display">
+                        {project.title}
+                      </h3>
+
+                      <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">
+                        {project.description}
+                      </p>
+
+                      {/* Technologies */}
+                      {project.technologies && project.technologies.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {project.technologies.map(tech => (
+                            <span
+                              key={tech}
+                              className="px-2 py-0.5 bg-white rounded-md text-[10px] font-mono text-slate-700 border border-slate-200"
+                            >
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Contributeurs & Actions */}
+                    <div className="pt-3 border-t border-slate-200 space-y-3">
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                          Équipe &amp; Contributeurs ({project.contributors?.length || 0})
+                        </span>
+                        {project.contributors && project.contributors.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {project.contributors.map(c => (
+                              <span
+                                key={c.id || c.userId}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[11px] text-slate-800"
+                              >
+                                <span className="font-semibold">{c.name || 'Membre'}</span>
+                                {c.roleInProject && (
+                                  <span className="text-[9px] text-blue-600 font-mono">({c.roleInProject})</span>
+                                )}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 italic">Aucun contributeur désigné</span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 pt-1">
+                        <div className="flex items-center gap-2">
+                          {project.githubUrl && (
+                            <a
+                              href={project.githubUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 bg-white text-slate-700 hover:text-blue-600 rounded-lg border border-slate-200 text-xs flex items-center gap-1 transition"
+                              title="Voir le dépôt GitHub"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              <span className="text-[10px] font-mono">GitHub</span>
+                            </a>
+                          )}
+                          {project.demoUrl && (
+                            <a
+                              href={project.demoUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 bg-white text-slate-700 hover:text-blue-600 rounded-lg border border-slate-200 text-xs flex items-center gap-1 transition"
+                              title="Voir la démo en ligne"
+                            >
+                              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                              <span className="text-[10px] font-mono">Démo</span>
+                            </a>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => openEditProject(project)}
+                            className="p-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-200 transition cursor-pointer"
+                            title="Modifier ce projet"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProject(project.id, project.title)}
+                            className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg border border-rose-200 transition cursor-pointer"
+                            title="Supprimer ce projet"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ════════════ ONGLET 3: CERTIFICATIONS ════════════ */}
         {activeTab === 'certifs' && (
-          <div className="card p-6 bg-white border border-slate-300 shadow-sm space-y-3">
+          <div className="card p-6 bg-white border border-slate-300 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <h2 className="text-lg font-bold text-slate-900 font-display flex items-center gap-2">
+                <Award className="w-5 h-5 text-emerald-600" />
+                <span>Certifications Officielles Délivrées</span>
+              </h2>
+              <span className="text-xs text-slate-500 font-mono">{certifications.length} certificat(s)</span>
+            </div>
+
             {certifications.length === 0 ? (
               <div className="py-12 text-center text-xs text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                 <Award className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                <p className="font-semibold text-slate-700">Aucune certification délivrée</p>
-                <p className="mt-1">Créez des formations puis cliquez sur « Certifier » pour délivrer des certifications aux membres.</p>
+                <p className="font-semibold text-slate-700">Aucune certification délivrée pour le moment.</p>
+                <p className="mt-1">Rendez-vous dans l&apos;onglet Formations pour certifier des membres étudiants.</p>
               </div>
             ) : (
-              certifications.map(cert => {
-                const member = allUsers.find(u => u.id === cert.userId);
-                return (
-                  <div key={cert.id} className="p-4 rounded-2xl border border-emerald-200 bg-emerald-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
-                        <Award className="w-5 h-5 text-emerald-700" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {certifications.map(c => {
+                  const member = allUsers.find(u => u.id === c.userId);
+                  const memberName = member ? `${member.prenom} ${member.nom}` : c.userId;
+                  const matricule = member?.matricule || 'N/A';
+                  return (
+                    <div key={c.id} className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                          <Award className="w-5 h-5 text-emerald-700" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-900 leading-snug">{c.courseTitle}</h4>
+                          <p className="text-xs font-semibold text-emerald-900 mt-0.5">{memberName}</p>
+                          <span className="text-[10px] text-slate-500 font-mono block">
+                            Matricule : {matricule} &bull; {new Date(c.issuedAt).toLocaleDateString('fr-FR')}
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-bold text-slate-900 text-xs">{cert.courseTitle}</p>
-                        <p className="text-[11px] text-slate-600 mt-0.5">
-                          {member ? `${member.prenom} ${member.nom} (${member.matricule})` : cert.userId}
-                        </p>
-                        <p className="text-[10px] text-emerald-700 font-semibold mt-0.5">
-                          Délivrée le {new Date(cert.issuedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                        </p>
-                      </div>
+                      <button
+                        onClick={() => handleRevokeCertif(c.id, memberName, c.courseTitle)}
+                        className="text-slate-400 hover:text-rose-600 p-1 rounded-lg transition cursor-pointer"
+                        title="Révoquer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => handleRevokeCertif(cert.id, member ? `${member.prenom} ${member.nom}` : cert.userId, cert.courseTitle)}
-                      className="px-2.5 py-1 bg-rose-100 hover:bg-rose-200 text-rose-800 text-[10px] font-bold rounded-lg cursor-pointer transition shrink-0"
-                    >
-                      Révoquer
-                    </button>
-                  </div>
-                );
-              })
+                  );
+                })}
+              </div>
             )}
           </div>
         )}
       </main>
 
-      {/* Modal Créer / Éditer Formation */}
+      {/* Modal Création/Modification Formation */}
       {isAddOpen && (
         <div className="modal-backdrop">
           <div className="modal-card p-6 sm:p-7 space-y-4 max-w-lg bg-white border border-slate-300 text-slate-900">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <h3 className="text-base font-bold text-slate-900 font-display">
-                {editTarget ? 'Modifier la Formation' : 'Nouvelle Formation'}
-              </h3>
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center">
+                  <GraduationCap className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 font-display">
+                    {editTarget ? 'Modifier la Formation' : 'Créer une Formation'}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">Pôle Pédagogique GIT</p>
+                </div>
+              </div>
               <button onClick={() => { setIsAddOpen(false); setEditTarget(null); }} className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
@@ -478,31 +887,59 @@ export default function FormationsAdminPage() {
 
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1 uppercase tracking-wider">Intitulé de la Formation *</label>
-                <input type="text" placeholder="Ex: Programmation STM32 Bare-Metal C/C++" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} className="input-nasa text-xs text-slate-900" />
+                <label className="block text-xs font-bold text-slate-800 mb-1 uppercase tracking-wider">Intitulé de la formation *</label>
+                <input
+                  type="text"
+                  placeholder="Ex : Architecture Microcontrôleurs STM32 & FreeRTOS"
+                  value={form.title}
+                  onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                  className="input-nasa text-xs text-slate-900"
+                />
               </div>
+
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1 uppercase tracking-wider">Description</label>
-                <textarea rows={2} placeholder="Objectifs et contenu de la formation..." value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="input-nasa text-xs text-slate-900 resize-none" />
+                <label className="block text-xs font-bold text-slate-800 mb-1 uppercase tracking-wider">Description &amp; Objectifs</label>
+                <textarea
+                  rows={3}
+                  placeholder="Programme, prérequis et livrables attendus..."
+                  value={form.description}
+                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                  className="input-nasa text-xs text-slate-900"
+                />
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1 uppercase tracking-wider">Intervenant</label>
-                  <input type="text" placeholder="Nom du formateur" value={form.instructor || ''} onChange={e => setForm(f => ({ ...f, instructor: e.target.value }))} className="input-nasa text-xs text-slate-900" />
+                  <label className="block text-xs font-bold text-slate-800 mb-1 uppercase tracking-wider">Intervenant / Formateur</label>
+                  <input
+                    type="text"
+                    placeholder="Ex : MBIAKOP Junior"
+                    value={form.instructor || ''}
+                    onChange={e => setForm(f => ({ ...f, instructor: e.target.value }))}
+                    className="input-nasa text-xs text-slate-900"
+                  />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1 uppercase tracking-wider">Durée (heures)</label>
-                  <input type="number" min={1} value={form.hoursCount || 20} onChange={e => setForm(f => ({ ...f, hoursCount: Number(e.target.value) }))} className="input-nasa text-xs text-slate-900" />
+                  <label className="block text-xs font-bold text-slate-800 mb-1 uppercase tracking-wider">Volume Horaire (h)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={120}
+                    value={form.hoursCount || 20}
+                    onChange={e => setForm(f => ({ ...f, hoursCount: parseInt(e.target.value) || 20 }))}
+                    className="input-nasa text-xs text-slate-900"
+                  />
                 </div>
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-800 mb-1 uppercase tracking-wider">Niveau Cible</label>
                   <select value={form.level} onChange={e => setForm(f => ({ ...f, level: e.target.value }))} className="input-nasa text-xs text-slate-900 bg-white">
                     <option value="Tous Niveaux">Tous Niveaux</option>
-                    <option value="GI_1 & GI_2">GI 1 & GI 2</option>
+                    <option value="GI_1 & GI_2">GI 1 &amp; GI 2</option>
                     <option value="GI_3+">GI 3 et plus</option>
-                    <option value="GI_4 & GI_5">GI 4 & GI 5 (Avancé)</option>
+                    <option value="GI_4 & GI_5">GI 4 &amp; GI 5 (Avancé)</option>
                   </select>
                 </div>
                 <div>
@@ -527,8 +964,200 @@ export default function FormationsAdminPage() {
 
             <div className="flex gap-3 pt-2">
               <button onClick={() => { setIsAddOpen(false); setEditTarget(null); }} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition cursor-pointer">Annuler</button>
-              <button onClick={handleSave} disabled={!form.title.trim()} className="btn-nasa flex-1 py-2.5 text-xs font-bold cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
+              <button onClick={handleSaveCourse} disabled={!form.title.trim()} className="btn-nasa flex-1 py-2.5 text-xs font-bold cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
                 {editTarget ? 'Mettre à Jour' : 'Créer la Formation'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Création/Modification Projet R&D */}
+      {isProjectModalOpen && (
+        <div className="modal-backdrop">
+          <div className="modal-card p-6 sm:p-7 space-y-4 max-w-xl bg-white border border-slate-300 text-slate-900 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center">
+                  <FolderGit2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 font-display">
+                    {editingProject ? 'Modifier le Projet R&D' : 'Nouveau Projet R&D Laboratoire'}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">Pôle Recherche, Développement &amp; Ingénierie</p>
+                </div>
+              </div>
+              <button onClick={() => setIsProjectModalOpen(false)} className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-800 mb-1 uppercase tracking-wider">Titre du Projet *</label>
+                <input
+                  type="text"
+                  placeholder="Ex : Station Météo Connectée & Surveillance Labo"
+                  value={projectForm.title}
+                  onChange={e => setProjectForm(p => ({ ...p, title: e.target.value }))}
+                  className="input-nasa text-xs text-slate-900"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-1 uppercase tracking-wider">Catégorie Technique</label>
+                  <select
+                    value={projectForm.category}
+                    onChange={e => setProjectForm(p => ({ ...p, category: e.target.value as Project['category'] }))}
+                    className="input-nasa text-xs text-slate-900 bg-white"
+                  >
+                    {PROJECT_CATEGORIES.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center pt-5">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800">
+                    <input
+                      type="checkbox"
+                      checked={projectForm.featured}
+                      onChange={e => setProjectForm(p => ({ ...p, featured: e.target.checked }))}
+                      className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                    />
+                    <span>Mettre en vedette (Showcase)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-800 mb-1 uppercase tracking-wider">Description &amp; Cahier des charges *</label>
+                <textarea
+                  rows={3}
+                  placeholder="Détaillez l'objectif d'ingénierie, l'architecture et les composants utilisés..."
+                  value={projectForm.description}
+                  onChange={e => setProjectForm(p => ({ ...p, description: e.target.value }))}
+                  className="input-nasa text-xs text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-800 mb-1 uppercase tracking-wider">Technologies (séparées par virgules)</label>
+                <input
+                  type="text"
+                  placeholder="Ex : ESP32, LoRaWAN, Next.js, FreeRTOS, MQTT"
+                  value={techInput}
+                  onChange={e => setTechInput(e.target.value)}
+                  className="input-nasa text-xs text-slate-900"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-1 uppercase tracking-wider">Lien GitHub (Optionnel)</label>
+                  <input
+                    type="url"
+                    placeholder="https://github.com/..."
+                    value={projectForm.githubUrl || ''}
+                    onChange={e => setProjectForm(p => ({ ...p, githubUrl: e.target.value }))}
+                    className="input-nasa text-xs text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-1 uppercase tracking-wider">Lien Démo / Live (Optionnel)</label>
+                  <input
+                    type="url"
+                    placeholder="https://..."
+                    value={projectForm.demoUrl || ''}
+                    onChange={e => setProjectForm(p => ({ ...p, demoUrl: e.target.value }))}
+                    className="input-nasa text-xs text-slate-900"
+                  />
+                </div>
+              </div>
+
+              {/* Attribution des Contributeurs */}
+              <div className="pt-2 border-t border-slate-200 space-y-2">
+                <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
+                  Contributeurs Attribués ({projectForm.contributors.length})
+                </label>
+
+                {projectForm.contributors.length > 0 && (
+                  <div className="space-y-1.5 max-h-36 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-200">
+                    {projectForm.contributors.map(c => (
+                      <div key={c.userId} className="flex items-center justify-between text-xs p-1.5 bg-white rounded-lg border border-slate-200">
+                        <div>
+                          <span className="font-bold text-slate-800">{c.name}</span>
+                          <span className="text-[10px] text-blue-600 font-mono ml-2">({c.roleInProject})</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeContributorFromProject(c.userId)}
+                          className="text-slate-400 hover:text-rose-600 p-1"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1">
+                  <div className="sm:col-span-6 relative">
+                    <input
+                      type="text"
+                      placeholder="Chercher un membre (nom, matricule)..."
+                      value={contributorSearch}
+                      onChange={e => setContributorSearch(e.target.value)}
+                      className="input-nasa text-xs text-slate-900"
+                    />
+                  </div>
+                  <div className="sm:col-span-6">
+                    <input
+                      type="text"
+                      placeholder="Rôle (ex: Lead Firmware)..."
+                      value={newContributorRole}
+                      onChange={e => setNewContributorRole(e.target.value)}
+                      className="input-nasa text-xs text-slate-900"
+                    />
+                  </div>
+                </div>
+
+                {contributorSearch.trim().length > 0 && (
+                  <div className="space-y-1 max-h-32 overflow-y-auto p-1 bg-slate-100 rounded-xl border border-slate-200">
+                    {allUsers
+                      .filter(u =>
+                        u.nom.toLowerCase().includes(contributorSearch.toLowerCase()) ||
+                        u.prenom.toLowerCase().includes(contributorSearch.toLowerCase()) ||
+                        u.matricule.toLowerCase().includes(contributorSearch.toLowerCase())
+                      )
+                      .slice(0, 5)
+                      .map(u => (
+                        <button
+                          key={u.id}
+                          type="button"
+                          onClick={() => addContributorToProject(u)}
+                          className="w-full text-left p-2 rounded-lg bg-white hover:bg-blue-50 text-xs flex items-center justify-between transition cursor-pointer"
+                        >
+                          <span className="font-bold text-slate-800">{u.prenom} {u.nom} ({u.matricule})</span>
+                          <span className="text-[10px] text-blue-600 font-bold">+ Ajouter</span>
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-3">
+              <button onClick={() => setIsProjectModalOpen(false)} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition cursor-pointer">
+                Annuler
+              </button>
+              <button
+                onClick={handleSaveProject}
+                disabled={!projectForm.title.trim() || !projectForm.description.trim()}
+                className="btn-nasa flex-1 py-2.5 text-xs font-bold cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {editingProject ? 'Mettre à Jour le Projet' : 'Enregistrer le Projet R&D'}
               </button>
             </div>
           </div>

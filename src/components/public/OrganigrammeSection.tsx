@@ -320,18 +320,18 @@ export default function OrganigrammeSection() {
           </p>
 
           {/* ─── BARRE D'ANIMATION & CONTRÔLES INTERACTIFS ─── */}
-          <div className="pt-2 flex flex-wrap items-center justify-center gap-2.5">
+          <div className="pt-2 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-2.5">
             <button
               onClick={runProgressiveAnimation}
               disabled={isPlaying}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-mono font-bold transition shadow-md shadow-blue-600/20 disabled:opacity-50 cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-mono font-bold transition shadow-md shadow-blue-600/20 disabled:opacity-50 cursor-pointer w-full sm:w-auto justify-center"
             >
               <RotateCcw className={`w-3.5 h-3.5 ${isPlaying ? 'animate-spin' : ''}`} />
-              <span>{isPlaying ? 'Animation en cours...' : 'Rejouer l\'animation progressive'}</span>
+              <span>{isPlaying ? 'Animation en cours...' : 'Rejouer l\'animation'}</span>
             </button>
 
-            {/* Filtrage par étage de la pyramide */}
-            <div className="inline-flex items-center p-1 rounded-xl bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs font-mono">
+            {/* Filtrage par étage de la pyramide - défilement tactile sur mobile */}
+            <div className="flex items-center overflow-x-auto pb-1 gap-1 w-full sm:w-auto sm:p-1 sm:rounded-xl sm:bg-slate-100 sm:dark:bg-[#111827] sm:border sm:border-slate-200 sm:dark:border-slate-800 text-xs font-mono no-scrollbar">
               {[
                 { id: 'ALL', label: 'Toute la Pyramide' },
                 { id: 1, label: 'Niv. 1 · Présidence' },
@@ -341,10 +341,10 @@ export default function OrganigrammeSection() {
                 <button
                   key={filter.id}
                   onClick={() => setActiveLevel(filter.id as number | 'ALL')}
-                  className={`px-3 py-1.5 rounded-lg font-semibold transition cursor-pointer ${
+                  className={`px-3 py-2 rounded-xl font-semibold transition cursor-pointer shrink-0 ${
                     activeLevel === filter.id
-                      ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-2xs font-bold'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      ? 'bg-blue-600 text-white shadow-xs font-bold'
+                      : 'bg-slate-100 dark:bg-[#111827] sm:bg-transparent sm:dark:bg-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800 sm:border-transparent sm:dark:border-transparent'
                   }`}
                 >
                   {filter.label}

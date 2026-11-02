@@ -41,7 +41,11 @@ import {
   Ban,
   Clock,
   ArrowRight,
-  Camera
+  Camera,
+  Calendar,
+  CreditCard,
+  Cpu,
+  FolderGit2
 } from 'lucide-react';
 
 interface AdminViewProps {
@@ -389,6 +393,129 @@ export default function AdminView({
         <div className="card p-3.5 bg-emerald-50/60 border border-emerald-200">
           <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">Trésoriers</span>
           <p className="text-xl font-black text-emerald-900 mt-0.5">{stats.tresoriers}</p>
+        </div>
+      </div>
+
+      {/* PÔLES & MODULES EXÉCUTIFS : Accès direct pour le Bureau Admin */}
+      <div className="card p-5 bg-white border border-slate-200 rounded-2xl space-y-3 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-2 border-b border-slate-100">
+          <div>
+            <span className="section-label">Pôles Opérationnels &bull; Navigation Exécutive</span>
+            <h3 className="text-sm font-bold text-slate-900 font-display">
+              Gestion des Modules &amp; Espaces de Direction
+            </h3>
+          </div>
+          <span className="text-[11px] text-slate-500 font-mono">Accès direct Administrateur</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <a
+            href="/evenements-admin"
+            className="p-3.5 rounded-xl bg-indigo-50/70 hover:bg-indigo-100/70 border border-indigo-200 transition group flex items-start gap-3"
+          >
+            <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-indigo-900 group-hover:text-indigo-700 transition flex items-center gap-1">
+                <span>Événements &amp; Communication</span>
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+              </h4>
+              <p className="text-[11px] text-indigo-700/80 mt-0.5">
+                Création et planification des conférences, hackathons et assemblées.
+              </p>
+            </div>
+          </a>
+
+          <a
+            href="/formations-admin"
+            className="p-3.5 rounded-xl bg-amber-50/70 hover:bg-amber-100/70 border border-amber-200 transition group flex items-start gap-3"
+          >
+            <div className="w-9 h-9 rounded-xl bg-amber-600 text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition">
+              <GraduationCap className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-amber-900 group-hover:text-amber-700 transition flex items-center gap-1">
+                <span>Formations &amp; Projets R&amp;D</span>
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+              </h4>
+              <p className="text-[11px] text-amber-700/80 mt-0.5">
+                Gestion des ateliers, projets R&amp;D et délivrance des certifications.
+              </p>
+            </div>
+          </a>
+
+          <a
+            href="/tresorier"
+            className="p-3.5 rounded-xl bg-emerald-50/70 hover:bg-emerald-100/70 border border-emerald-200 transition group flex items-start gap-3"
+          >
+            <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition">
+              <CreditCard className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-emerald-900 group-hover:text-emerald-700 transition flex items-center gap-1">
+                <span>Trésorerie &amp; Caisse</span>
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+              </h4>
+              <p className="text-[11px] text-emerald-700/80 mt-0.5">
+                Encaissement cotisations, génération reçus PDF et suivi budgétaire.
+              </p>
+            </div>
+          </a>
+
+          <a
+            href="/censeur"
+            className="p-3.5 rounded-xl bg-blue-50/70 hover:bg-blue-100/70 border border-blue-200 transition group flex items-start gap-3"
+          >
+            <div className="w-9 h-9 rounded-xl bg-[#0B3D91] text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-blue-900 group-hover:text-blue-700 transition flex items-center gap-1">
+                <span>Censeur &amp; Scanner Accès</span>
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+              </h4>
+              <p className="text-[11px] text-blue-700/80 mt-0.5">
+                Scan des badges tournants, registre des présences et sanctions.
+              </p>
+            </div>
+          </a>
+
+          <a
+            href="/labo"
+            className="p-3.5 rounded-xl bg-cyan-50/70 hover:bg-cyan-100/70 border border-cyan-200 transition group flex items-start gap-3"
+          >
+            <div className="w-9 h-9 rounded-xl bg-cyan-600 text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition">
+              <Cpu className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-cyan-900 group-hover:text-cyan-700 transition flex items-center gap-1">
+                <span>Laboratoire &amp; Mikrotik</span>
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+              </h4>
+              <p className="text-[11px] text-cyan-700/80 mt-0.5">
+                Gestion des paillasses, équipements et filtrage MAC Wi-Fi 6.
+              </p>
+            </div>
+          </a>
+
+          <a
+            href="/community-manager"
+            className="p-3.5 rounded-xl bg-pink-50/70 hover:bg-pink-100/70 border border-pink-200 transition group flex items-start gap-3"
+          >
+            <div className="w-9 h-9 rounded-xl bg-pink-600 text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition">
+              <Camera className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-pink-900 group-hover:text-pink-700 transition flex items-center gap-1">
+                <span>Gestion Médias (CM)</span>
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+              </h4>
+              <p className="text-[11px] text-pink-700/80 mt-0.5">
+                Téléversement de photos/vidéos et administration de la médiathèque.
+              </p>
+            </div>
+          </a>
         </div>
       </div>
 

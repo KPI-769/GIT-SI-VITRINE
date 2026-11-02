@@ -544,9 +544,6 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
-
-      {/* Barre de navigation tactile PWA Mobile */}
-      <MobileBottomBar />
     </div>
   );
 }

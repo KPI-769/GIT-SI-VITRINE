@@ -4,6 +4,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import PwaManager from "@/components/pwa/PwaManager";
+import MobileBottomBar from "@/components/public/MobileBottomBar";
 
 export const metadata: Metadata = {
   title: "Division Génie Infotronique (GIT) | Plateforme Officielle",
@@ -75,6 +76,7 @@ export default function RootLayout({
           <AuthProvider>
             <PwaManager />
             <SmoothScrollProvider>{children}</SmoothScrollProvider>
+            <MobileBottomBar />
           </AuthProvider>
         </ThemeProvider>
       </body>

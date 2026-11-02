@@ -465,7 +465,7 @@ export default function OrganigrammeSection() {
                     >
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border ${role.badgeLight} dark:${role.badgeDark}`}>
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border ${role.badgeLight} dark:${role.badgeDark.replace('bg', 'bg').replace('text', 'text').replace('border', 'border')}`}>
                             {role.matricule}
                           </span>
                           <div

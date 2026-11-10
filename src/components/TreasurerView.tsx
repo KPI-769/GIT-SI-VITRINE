@@ -58,7 +58,9 @@ import {
   Smartphone,
   UserCheck,
   RefreshCw,
-  Scale
+  Scale,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 
@@ -184,36 +186,20 @@ export default function TreasurerView({
     }
   };
 
-  // Démarrer la caméra
-  const startCamera = async (purpose: 'ENCAISSEMENT' | 'DECAISSEMENT' = 'ENCAISSEMENT') => {
-    try {
-      setScanPurpose(purpose);
-      setCameraError(null);
-      setIsScanningCamera(true);
-
-      const html5QrCode = new Html5Qrcode('qr-reader-region-treasurer');
-      scannerRef.current = html5QrCode;
-
-      await html5QrCode.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText) => {
-          handleProcessScan(decodedText);
-        },
-        () => {}
-      );
-    } catch (err) {
-      console.error(err);
-      setCameraError('Impossible d\'activer la caméra. Assurez-vous d\'autoriser l\'accès dans votre navigateur.');
-      setIsScanningCamera(false);
-    }
+  // Démarrer la caméra (déclenche l'affichage du conteneur DOM qui sera ensuite initialisé par useEffect)
+  const startCamera = (purpose: 'ENCAISSEMENT' | 'DECAISSEMENT' = 'ENCAISSEMENT') => {
+    setScanPurpose(purpose);
+    setCameraError(null);
+    setIsScanningCamera(true);
   };
 
-  // Arrêter la caméra
+  // Arrêter la caméra proprement
   const stopCamera = async () => {
     if (scannerRef.current) {
       try {
-        await scannerRef.current.stop();
+        if (scannerRef.current.isScanning) {
+          await scannerRef.current.stop();
+        }
         scannerRef.current.clear();
       } catch (e) {
         console.error(e);
@@ -223,10 +209,99 @@ export default function TreasurerView({
     setIsScanningCamera(false);
   };
 
+  // Scan d'une photo / capture de QR code importée (pour smartphone ou PC)
+  const handleScanImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const html5QrCode = new Html5Qrcode('qr-reader-region-treasurer-file');
+      const decodedText = await html5QrCode.scanFile(file, true);
+      html5QrCode.clear();
+      handleProcessScan(decodedText);
+    } catch (err) {
+      console.error(err);
+      playErrorTone();
+      showToast("Aucun QR Code valide détecté sur cette image. Veuillez sélectionner une photo nette du badge.");
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  // Initialisation du flux vidéo de la caméra APRES le montage du conteneur dans le DOM
+  useEffect(() => {
+    if (!isScanningCamera) return;
+
+    let isMounted = true;
+    const timer = setTimeout(async () => {
+      try {
+        const container = document.getElementById('qr-reader-region-treasurer');
+        if (!container || !isMounted) return;
+
+        // Arrêter l'ancienne instance si active
+        if (scannerRef.current) {
+          try {
+            if (scannerRef.current.isScanning) {
+              await scannerRef.current.stop();
+            }
+            scannerRef.current.clear();
+          } catch {}
+          scannerRef.current = null;
+        }
+
+        const html5QrCode = new Html5Qrcode('qr-reader-region-treasurer');
+        scannerRef.current = html5QrCode;
+
+        // Configuration du scan avec bascule automatique arrière -> avant / webcam
+        try {
+          await html5QrCode.start(
+            { facingMode: 'environment' },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            (decodedText) => {
+              handleProcessScan(decodedText);
+            },
+            () => {}
+          );
+        } catch (envErr) {
+          console.warn("Caméra arrière indisponible, tentative caméra par défaut...", envErr);
+          await html5QrCode.start(
+            { facingMode: 'user' },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            (decodedText) => {
+              handleProcessScan(decodedText);
+            },
+            () => {}
+          );
+        }
+      } catch (err: any) {
+        console.error("Erreur Html5Qrcode start:", err);
+        let msg = "Impossible d'activer la caméra. Assurez-vous d'autoriser l'accès dans votre navigateur.";
+        if (err?.name === 'NotAllowedError' || err?.message?.includes('Permission') || err?.message?.includes('NotAllowedError')) {
+          msg = "Autorisation caméra refusée. Cliquez sur l'icône de cadenas ou caméra dans la barre d'adresse du navigateur pour débloquer l'accès.";
+        } else if (err?.name === 'NotFoundError' || err?.name === 'DevicesNotFoundError') {
+          msg = "Aucune caméra détectée sur cet appareil.";
+        } else if (typeof window !== 'undefined' && !window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+          msg = "Contexte HTTP non sécurisé. Les navigateurs bloquent la caméra en dehors de HTTPS ou localhost. Utilisez le bouton 'Importer Image QR' ou la sélection dans la liste.";
+        }
+        setCameraError(msg);
+        setIsScanningCamera(false);
+      }
+    }, 150);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [isScanningCamera, scanPurpose]);
+
   useEffect(() => {
     return () => {
       if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {});
+        try {
+          if (scannerRef.current.isScanning) {
+            scannerRef.current.stop().catch(() => {});
+          }
+        } catch {}
       }
     };
   }, []);
@@ -513,7 +588,7 @@ export default function TreasurerView({
         {/* Boutons d'action rapides */}
         <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
           {!isScanningCamera ? (
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <button
                 onClick={() => startCamera('ENCAISSEMENT')}
                 className="btn-nasa w-full sm:w-auto py-2.5 px-4 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md"
@@ -527,8 +602,21 @@ export default function TreasurerView({
                 className="bg-amber-600 hover:bg-amber-700 text-white w-full sm:w-auto py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md transition"
               >
                 <ArrowDownLeft className="w-4 h-4 text-amber-200" />
-                <span>Scanner pour Décaisser (Audit)</span>
+                <span>Scanner pour Décaisser</span>
               </button>
+
+              {/* Bouton alternatif Import de Photo de Badge QR (Fonctionne même sans caméra ou en HTTP) */}
+              <label className="bg-slate-100 hover:bg-slate-200 text-slate-800 w-full sm:w-auto py-2.5 px-3 rounded-xl text-xs font-bold border border-slate-300 flex items-center justify-center gap-1.5 cursor-pointer transition shadow-xs">
+                <Upload className="w-4 h-4 text-[#0B3D91]" />
+                <span>Importer Photo QR</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleScanImageFile}
+                />
+              </label>
             </div>
           ) : (
             <button
@@ -542,10 +630,26 @@ export default function TreasurerView({
         </div>
       </div>
 
+      {/* Conteneur caché pour le décodage d'images de QR Code */}
+      <div id="qr-reader-region-treasurer-file" className="hidden"></div>
+
       {cameraError && (
-        <div className="p-4 pill-red rounded-xl text-xs flex items-center gap-2.5">
-          <AlertCircle className="w-4 h-4 shrink-0 text-[#DC2626]" />
-          <span>{cameraError} Vous pouvez également sélectionner manuellement un membre dans les listes.</span>
+        <div className="p-4 bg-amber-50 border border-amber-300 rounded-2xl text-xs space-y-2 text-amber-950">
+          <div className="flex items-center gap-2 font-bold text-amber-900">
+            <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+            <span>Information Accès Caméra</span>
+          </div>
+          <p className="text-[11px] leading-relaxed">
+            {cameraError}
+          </p>
+          <div className="p-2.5 bg-white/80 rounded-xl border border-amber-200 text-[11px] space-y-1">
+            <strong>Conseils pour activer la caméra :</strong>
+            <ul className="list-disc list-inside space-y-0.5 text-slate-700">
+              <li>Cliquez sur l&apos;icône <strong>🔒 Cadenas</strong> ou <strong>🎥 Caméra</strong> tout à gauche de la barre d&apos;adresse du navigateur.</li>
+              <li>Activez la permission <strong>« Caméra »</strong> sur <strong>« Autoriser »</strong> puis actualisez la page.</li>
+              <li>Sur smartphone via adresse IP locale (HTTP) : utilisez le bouton <strong>« Importer Photo QR »</strong> pour charger la photo du badge directement.</li>
+            </ul>
+          </div>
         </div>
       )}
 

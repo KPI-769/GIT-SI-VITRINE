@@ -30,7 +30,8 @@ import {
   Clock,
   Send,
   PlusCircle,
-  FileWarning
+  FileWarning,
+  Upload
 } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 
@@ -154,34 +155,18 @@ export default function CenseurView({ allUsers, currentUser }: CenseurViewProps)
   };
 
   // Démarrer la caméra
-  const startCamera = async () => {
-    try {
-      setCameraError(null);
-      setIsScanningCamera(true);
-
-      const html5QrCode = new Html5Qrcode('qr-reader-region-censeur');
-      scannerRef.current = html5QrCode;
-
-      await html5QrCode.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText) => {
-          processScanData(decodedText);
-        },
-        () => {}
-      );
-    } catch (err) {
-      console.error(err);
-      setCameraError('Impossible d\'accéder à la caméra. Vérifiez les autorisations de votre appareil.');
-      setIsScanningCamera(false);
-    }
+  const startCamera = () => {
+    setCameraError(null);
+    setIsScanningCamera(true);
   };
 
   // Stopper la caméra
   const stopCamera = async () => {
     if (scannerRef.current) {
       try {
-        await scannerRef.current.stop();
+        if (scannerRef.current.isScanning) {
+          await scannerRef.current.stop();
+        }
         scannerRef.current.clear();
       } catch (e) {
         console.error(e);
@@ -191,10 +176,97 @@ export default function CenseurView({ allUsers, currentUser }: CenseurViewProps)
     setIsScanningCamera(false);
   };
 
+  // Scan d'une image/photo de badge QR importée
+  const handleScanImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const html5QrCode = new Html5Qrcode('qr-reader-region-censeur-file');
+      const decodedText = await html5QrCode.scanFile(file, true);
+      html5QrCode.clear();
+      processScanData(decodedText);
+    } catch (err) {
+      console.error(err);
+      playErrorTone();
+      showToast("Aucun QR Code valide détecté sur cette photo. Veuillez sélectionner une image nette du badge.");
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  // Initialisation du flux vidéo de la caméra APRES le montage du conteneur dans le DOM
+  useEffect(() => {
+    if (!isScanningCamera) return;
+
+    let isMounted = true;
+    const timer = setTimeout(async () => {
+      try {
+        const container = document.getElementById('qr-reader-region-censeur');
+        if (!container || !isMounted) return;
+
+        if (scannerRef.current) {
+          try {
+            if (scannerRef.current.isScanning) {
+              await scannerRef.current.stop();
+            }
+            scannerRef.current.clear();
+          } catch {}
+          scannerRef.current = null;
+        }
+
+        const html5QrCode = new Html5Qrcode('qr-reader-region-censeur');
+        scannerRef.current = html5QrCode;
+
+        try {
+          await html5QrCode.start(
+            { facingMode: 'environment' },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            (decodedText) => {
+              processScanData(decodedText);
+            },
+            () => {}
+          );
+        } catch (envErr) {
+          console.warn("Caméra arrière indisponible, tentative caméra frontale/webcam...", envErr);
+          await html5QrCode.start(
+            { facingMode: 'user' },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            (decodedText) => {
+              processScanData(decodedText);
+            },
+            () => {}
+          );
+        }
+      } catch (err: any) {
+        console.error("Erreur caméra censeur:", err);
+        let msg = "Impossible d'accéder à la caméra. Vérifiez les autorisations de votre appareil.";
+        if (err?.name === 'NotAllowedError' || err?.message?.includes('Permission') || err?.message?.includes('NotAllowedError')) {
+          msg = "Autorisation caméra refusée. Cliquez sur l'icône de cadenas ou caméra dans la barre d'adresse pour débloquer l'accès.";
+        } else if (err?.name === 'NotFoundError' || err?.name === 'DevicesNotFoundError') {
+          msg = "Aucun périphérique caméra détecté sur cet appareil.";
+        } else if (typeof window !== 'undefined' && !window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+          msg = "Contexte HTTP non sécurisé. Les navigateurs bloquent la caméra en dehors de HTTPS ou localhost. Utilisez le bouton 'Importer Photo QR' ou la simulation de scan.";
+        }
+        setCameraError(msg);
+        setIsScanningCamera(false);
+      }
+    }, 150);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [isScanningCamera]);
+
   useEffect(() => {
     return () => {
       if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {});
+        try {
+          if (scannerRef.current.isScanning) {
+            scannerRef.current.stop().catch(() => {});
+          }
+        } catch {}
       }
     };
   }, []);
@@ -311,13 +383,27 @@ export default function CenseurView({ allUsers, currentUser }: CenseurViewProps)
 
           {/* Bouton Caméra */}
           {!isScanningCamera ? (
-            <button
-              onClick={startCamera}
-              className="btn-nasa w-full sm:w-auto py-3 px-4 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md"
-            >
-              <Camera className="w-4 h-4" />
-              <span>Activer Caméra Scanner</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+              <button
+                onClick={startCamera}
+                className="btn-nasa w-full sm:w-auto py-3 px-4 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md"
+              >
+                <Camera className="w-4 h-4" />
+                <span>Activer Caméra Scanner</span>
+              </button>
+
+              <label className="bg-slate-100 hover:bg-slate-200 text-slate-800 w-full sm:w-auto py-3 px-3.5 rounded-xl text-xs font-bold border border-slate-300 flex items-center justify-center gap-1.5 cursor-pointer transition shadow-xs">
+                <Upload className="w-4 h-4 text-[#0B3D91]" />
+                <span>Photo QR</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleScanImageFile}
+                />
+              </label>
+            </div>
           ) : (
             <button
               onClick={stopCamera}
@@ -330,10 +416,25 @@ export default function CenseurView({ allUsers, currentUser }: CenseurViewProps)
         </div>
       </div>
 
+      <div id="qr-reader-region-censeur-file" className="hidden"></div>
+
       {cameraError && (
-        <div className="p-4 pill-red rounded-xl text-xs flex items-center gap-2">
-          <XCircle className="w-4 h-4 shrink-0 text-[#DC2626]" />
-          <span>{cameraError} Vous pouvez utiliser les boutons de simulation ou déclarer un refus de scan.</span>
+        <div className="p-4 bg-amber-50 border border-amber-300 rounded-2xl text-xs space-y-2 text-amber-950">
+          <div className="flex items-center gap-2 font-bold text-amber-900">
+            <XCircle className="w-4 h-4 shrink-0 text-amber-600" />
+            <span>Accès Caméra</span>
+          </div>
+          <p className="text-[11px] leading-relaxed">
+            {cameraError}
+          </p>
+          <div className="p-2.5 bg-white/80 rounded-xl border border-amber-200 text-[11px] space-y-1 text-slate-700">
+            <strong>Pour autoriser la caméra :</strong>
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Cliquez sur l&apos;icône <strong>🔒 Cadenas</strong> ou <strong>🎥 Caméra</strong> à gauche dans la barre d&apos;adresse du navigateur.</li>
+              <li>Passez la permission <strong>« Caméra »</strong> sur <strong>« Autoriser »</strong>.</li>
+              <li>Vous pouvez aussi utiliser le bouton <strong>« Photo QR »</strong> pour importer directement une capture ou photo du badge.</li>
+            </ul>
+          </div>
         </div>
       )}
 

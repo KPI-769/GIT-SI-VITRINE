@@ -72,7 +72,7 @@ export default function MemberView({ user, onUpdateMacs }: MemberViewProps) {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('git_projects_v2');
+      const stored = localStorage.getItem('git_projects_v3');
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) setAllProjects(parsed);
@@ -80,7 +80,7 @@ export default function MemberView({ user, onUpdateMacs }: MemberViewProps) {
     } catch {}
 
     try {
-      const stored = localStorage.getItem('git_courses_v2');
+      const stored = localStorage.getItem('git_courses_v3');
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) setAllCourses(parsed);
@@ -88,7 +88,7 @@ export default function MemberView({ user, onUpdateMacs }: MemberViewProps) {
     } catch {}
 
     try {
-      const stored = localStorage.getItem('git_events_v2');
+      const stored = localStorage.getItem('git_events_v3');
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) setAllEvents(parsed);
@@ -96,7 +96,7 @@ export default function MemberView({ user, onUpdateMacs }: MemberViewProps) {
     } catch {}
 
     try {
-      const stored = localStorage.getItem('git_broadcasts_v1');
+      const stored = localStorage.getItem('git_broadcasts_v2');
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) setAllBroadcasts(parsed);
@@ -105,15 +105,15 @@ export default function MemberView({ user, onUpdateMacs }: MemberViewProps) {
 
     // Charger les inscriptions
     try {
-      const ce = localStorage.getItem('git_course_enrollments_v1');
+      const ce = localStorage.getItem('git_course_enrollments_v2');
       if (ce) setCourseEnrollments(JSON.parse(ce));
     } catch {}
     try {
-      const er = localStorage.getItem('git_event_registrations_v1');
+      const er = localStorage.getItem('git_event_registrations_v2');
       if (er) setEventRegistrations(JSON.parse(er));
     } catch {}
     try {
-      const br = localStorage.getItem('git_broadcast_registrations_v1');
+      const br = localStorage.getItem('git_broadcast_registrations_v2');
       if (br) setBroadcastRegistrations(JSON.parse(br));
     } catch {}
   }, []);
@@ -143,7 +143,7 @@ export default function MemberView({ user, onUpdateMacs }: MemberViewProps) {
       showEnrollToast(`Inscrit à « ${courseTitle} » ! Le responsable sera notifié.`);
     }
     setCourseEnrollments(updated);
-    localStorage.setItem('git_course_enrollments_v1', JSON.stringify(updated));
+    localStorage.setItem('git_course_enrollments_v2', JSON.stringify(updated));
   };
 
   const toggleEventRegistration = (eventId: string, eventTitle: string) => {
@@ -157,7 +157,7 @@ export default function MemberView({ user, onUpdateMacs }: MemberViewProps) {
       showEnrollToast(`Présence confirmée pour « ${eventTitle} » !`);
     }
     setEventRegistrations(updated);
-    localStorage.setItem('git_event_registrations_v1', JSON.stringify(updated));
+    localStorage.setItem('git_event_registrations_v2', JSON.stringify(updated));
   };
 
   const toggleBroadcastRegistration = (bcId: string, bcTitle: string) => {
@@ -171,7 +171,7 @@ export default function MemberView({ user, onUpdateMacs }: MemberViewProps) {
       showEnrollToast(`Demande envoyée pour participer à « ${bcTitle} » !`);
     }
     setBroadcastRegistrations(updated);
-    localStorage.setItem('git_broadcast_registrations_v1', JSON.stringify(updated));
+    localStorage.setItem('git_broadcast_registrations_v2', JSON.stringify(updated));
   };
   
   // États pour l'ajout d'adresse MAC

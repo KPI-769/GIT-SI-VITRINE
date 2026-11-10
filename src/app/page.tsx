@@ -105,7 +105,7 @@ export default function HomePage() {
 
     const loadProjectsCache = () => {
       try {
-        const storedProjects = localStorage.getItem('git_projects_v2');
+        const storedProjects = localStorage.getItem('git_projects_v3');
         if (storedProjects) {
           const parsed = JSON.parse(storedProjects);
           if (Array.isArray(parsed) && parsed.length > 0) setProjects(parsed);
@@ -119,19 +119,19 @@ export default function HomePage() {
     try {
       loadProjectsCache();
 
-      const storedEvts = localStorage.getItem('git_events_v2');
+      const storedEvts = localStorage.getItem('git_events_v3');
       if (storedEvts) {
         const parsed = JSON.parse(storedEvts);
         if (Array.isArray(parsed) && parsed.length > 0) setEvents(parsed);
       }
 
-      const storedCourses = localStorage.getItem('git_courses_v2');
+      const storedCourses = localStorage.getItem('git_courses_v3');
       if (storedCourses) {
         const parsed = JSON.parse(storedCourses);
         if (Array.isArray(parsed) && parsed.length > 0) setCourses(parsed);
       }
 
-      const storedUsers = localStorage.getItem('git_community_users_v5_sjp');
+      const storedUsers = localStorage.getItem('git_community_users_v6_sjp');
       if (storedUsers) {
         const parsed = JSON.parse(storedUsers);
         if (Array.isArray(parsed) && parsed.length > 0) setUsers(parsed);
@@ -146,7 +146,7 @@ export default function HomePage() {
       .then((data) => {
         if (data.success && Array.isArray(data.projects) && data.projects.length > 0) {
           setProjects(data.projects);
-          localStorage.setItem('git_projects_v2', JSON.stringify(data.projects));
+          localStorage.setItem('git_projects_v3', JSON.stringify(data.projects));
         }
       })
       .catch(() => {});
@@ -156,7 +156,7 @@ export default function HomePage() {
       .then((data) => {
         if (data.success && Array.isArray(data.events) && data.events.length > 0) {
           setEvents(data.events);
-          localStorage.setItem('git_events_v2', JSON.stringify(data.events));
+          localStorage.setItem('git_events_v3', JSON.stringify(data.events));
         }
       })
       .catch(() => {});
@@ -166,7 +166,7 @@ export default function HomePage() {
       .then((data) => {
         if (data.success && Array.isArray(data.courses) && data.courses.length > 0) {
           setCourses(data.courses);
-          localStorage.setItem('git_courses_v2', JSON.stringify(data.courses));
+          localStorage.setItem('git_courses_v3', JSON.stringify(data.courses));
         }
       })
       .catch(() => {});

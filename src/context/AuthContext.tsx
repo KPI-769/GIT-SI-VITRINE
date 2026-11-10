@@ -55,9 +55,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const STORAGE_KEY_USERS = 'git_community_users_v5_sjp';
-const STORAGE_KEY_PAYMENTS = 'git_community_payments_v5_sjp';
-const STORAGE_KEY_SESSION = 'git_community_session_v5_sjp';
+const STORAGE_KEY_USERS = 'git_community_users_v6_sjp';
+const STORAGE_KEY_PAYMENTS = 'git_community_payments_v6_sjp';
+const STORAGE_KEY_SESSION = 'git_community_session_v6_sjp';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);

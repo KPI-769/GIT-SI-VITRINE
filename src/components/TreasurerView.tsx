@@ -1432,454 +1432,472 @@ export default function TreasurerView({
         </div>
       )}
 
-      {/* 5. MODAL D'ENCAISSEMENT RAPIDE (COTISATIONS & PÉNALITÉS + WHATSAPP) */}
+      {/* 5. MODAL D'ENCAISSEMENT RAPIDE (COTISATIONS & PÉNALITÉS + WHATSAPP) - 100% RESPONSIVE SMARTPHONE */}
       {modalMember && (
         <div className="modal-backdrop">
-          <div className="modal-card p-5 sm:p-6 space-y-4 max-w-lg w-full bg-white">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-[#F0FDF4] border border-[#BBF7D0] flex items-center justify-center text-[#16A34A]">
+          <div className="modal-card max-w-lg w-full bg-white flex flex-col max-h-[92dvh] sm:max-h-[88vh] overflow-hidden rounded-2xl shadow-2xl">
+            {/* Header fixe du modal */}
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white z-10">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#F0FDF4] border border-[#BBF7D0] flex items-center justify-center text-[#16A34A] shrink-0">
                   <CreditCard className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 font-display">Guichet d&apos;Encaissement</h3>
-                  <p className="text-xs text-slate-500">Validation et édition du reçu certifié avec envoi WhatsApp</p>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 font-display leading-tight">Guichet d&apos;Encaissement</h3>
+                  <p className="text-[11px] text-slate-500 leading-tight">Reçu certifié &amp; transmission WhatsApp</p>
                 </div>
               </div>
               <button
                 onClick={() => setModalMember(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg transition cursor-pointer"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer shrink-0"
+                aria-label="Fermer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Fiche du membre scanné / sélectionné */}
-            <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Membre :</span>
-                <span className="font-bold text-slate-900">{modalMember.nom} {modalMember.prenom}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Matricule &amp; Rôle :</span>
-                <span className="font-mono text-[#0B3D91] font-bold">
-                  {modalMember.matricule} ({modalMember.role})
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Tarif Cotisation Applicable :</span>
-                <span className="font-bold text-emerald-700 font-mono">
-                  {getCotisationAmountForUser(modalMember).toLocaleString('fr-FR')} FCFA / mois
-                </span>
-              </div>
-            </div>
-
-            {/* Sélecteur de type d'encaissement (Cotisation vs Pénalité) */}
-            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
-              <button
-                type="button"
-                onClick={() => setModalTab('cotisation')}
-                className={`py-2 text-xs font-bold rounded-lg transition cursor-pointer ${
-                  modalTab === 'cotisation'
-                    ? 'bg-white text-[#0B3D91] shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                1. Cotisation ({getCotisationAmountForUser(modalMember).toLocaleString('fr-FR')} F)
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setModalTab('penalite')}
-                className={`py-2 text-xs font-bold rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                  modalTab === 'penalite'
-                    ? 'bg-white text-purple-700 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <span>2. Pénalité(s)</span>
-                {modalMember.penalties && modalMember.penalties.filter(p => p.status === 'PENDING').length > 0 && (
-                  <span className="px-1.5 py-0.2 bg-rose-600 text-white rounded-full text-[10px]">
-                    {modalMember.penalties.filter(p => p.status === 'PENDING').length}
-                  </span>
-                )}
-              </button>
-            </div>
-
-            {/* FORMULAIRE A : COTISATIONS */}
-            {modalTab === 'cotisation' && (
-              <form onSubmit={handleConfirmCotisation} className="space-y-4 pt-1">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-                    Mois concerné(s) ({getCotisationAmountForUser(modalMember).toLocaleString('fr-FR')} FCFA / mois)
-                  </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
-                    {[9, 10, 11, 12, 1, 2, 3, 4, 5, 6].map((moisNum) => {
-                      const isSelected = selectedMonthsToPay.includes(moisNum);
-                      const alreadyPaid = modalMember.cotisations.some(
-                        (c) => c.mois === moisNum && c.isPaid
-                      );
-
-                      return (
-                        <button
-                          type="button"
-                          key={moisNum}
-                          onClick={() => {
-                            if (alreadyPaid) return;
-                            if (isSelected) {
-                              setSelectedMonthsToPay(selectedMonthsToPay.filter((m) => m !== moisNum));
-                            } else {
-                              setSelectedMonthsToPay([...selectedMonthsToPay, moisNum]);
-                            }
-                          }}
-                          disabled={alreadyPaid}
-                          className={`p-2 rounded-xl text-xs font-bold border transition text-center cursor-pointer ${
-                            alreadyPaid
-                              ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
-                              : isSelected
-                              ? 'bg-[#0B3D91] border-[#0B3D91] text-white shadow-xs'
-                              : 'bg-white border-slate-200 text-slate-700 hover:border-[#0B3D91]'
-                          }`}
-                        >
-                          {MONTH_NAMES[moisNum - 1]}
-                          {alreadyPaid && <span className="block text-[9px] text-[#16A34A]">Réglé</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
+            {/* Corps scrollable du modal */}
+            <div className="overflow-y-auto custom-scrollbar p-4 sm:p-5 space-y-4 flex-1">
+              {/* Fiche du membre scanné / sélectionné */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Membre :</span>
+                  <span className="font-bold text-slate-900 text-right">{modalMember.nom} {modalMember.prenom}</span>
                 </div>
-
-                {/* Mode de règlement */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-                    Mode de règlement
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {['Mobile Money', 'Espèces', 'Virement'].map((method) => (
-                      <button
-                        type="button"
-                        key={method}
-                        onClick={() => setPaymentMethod(method)}
-                        className={`p-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
-                          paymentMethod === method
-                            ? 'bg-[#16A34A] border-[#16A34A] text-white shadow-xs'
-                            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-400'
-                        }`}
-                      >
-                        {method}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Référence de transaction */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
-                    Référence de reçu ou transaction
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ex: OM-2026-9941 ou RECU-001"
-                    value={paymentRef}
-                    onChange={(e) => setPaymentRef(e.target.value)}
-                    className="input-nasa font-mono text-xs w-full"
-                  />
-                </div>
-
-                {/* Numéro WhatsApp pour transmission instantanée du reçu */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                      <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
-                      Numéro WhatsApp du Membre
-                    </label>
-                    <label className="flex items-center gap-1.5 text-[11px] text-slate-500 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={sendWhatsAppOnConfirm}
-                        onChange={(e) => setSendWhatsAppOnConfirm(e.target.checked)}
-                        className="rounded text-emerald-600 focus:ring-emerald-500"
-                      />
-                      <span>Envoyer reçu par WhatsApp</span>
-                    </label>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Ex: 677000000 ou 237677000000"
-                    value={whatsappPhone}
-                    onChange={(e) => setWhatsappPhone(e.target.value)}
-                    className="input-nasa font-mono text-xs w-full"
-                  />
-                </div>
-
-                {/* Total */}
-                <div className="p-3.5 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl flex items-center justify-between text-xs">
-                  <span className="font-bold text-[#16A34A]">Total à encaisser :</span>
-                  <span className="text-lg font-black text-slate-900 font-display">
-                    {(selectedMonthsToPay.length * getCotisationAmountForUser(modalMember)).toLocaleString('fr-FR')} FCFA
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Matricule &amp; Rôle :</span>
+                  <span className="font-mono text-[#0B3D91] font-bold">
+                    {modalMember.matricule} ({modalMember.role})
                   </span>
                 </div>
-
-                <div className="flex gap-2.5 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setModalMember(null)}
-                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={selectedMonthsToPay.length === 0}
-                    className="btn-nasa flex-1 py-2.5 text-xs font-bold cursor-pointer disabled:opacity-50"
-                  >
-                    Valider, Reçu PDF &amp; WhatsApp
-                  </button>
+                <div className="flex items-center justify-between pt-0.5 border-t border-slate-200/60">
+                  <span className="text-slate-500">Tarif Cotisation Applicable :</span>
+                  <span className="font-bold text-emerald-700 font-mono">
+                    {getCotisationAmountForUser(modalMember).toLocaleString('fr-FR')} FCFA / mois
+                  </span>
                 </div>
-              </form>
-            )}
+              </div>
 
-            {/* FORMULAIRE B : PÉNALITÉS DU MEMBRE */}
-            {modalTab === 'penalite' && (
-              <div className="space-y-4 pt-1">
-                {(() => {
-                  const memberPendingPens = (modalMember.penalties || []).filter(p => p.status === 'PENDING');
+              {/* Sélecteur de type d'encaissement (Cotisation vs Pénalité) */}
+              <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl text-xs">
+                <button
+                  type="button"
+                  onClick={() => setModalTab('cotisation')}
+                  className={`py-2 px-2 text-xs font-bold rounded-lg transition cursor-pointer text-center ${
+                    modalTab === 'cotisation'
+                      ? 'bg-white text-[#0B3D91] shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  1. Cotisation ({getCotisationAmountForUser(modalMember).toLocaleString('fr-FR')} F)
+                </button>
 
-                  if (memberPendingPens.length === 0) {
-                    return (
-                      <div className="p-6 bg-emerald-50 rounded-2xl border border-emerald-200 text-center space-y-2">
-                        <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto" />
-                        <h4 className="text-sm font-bold text-emerald-950 font-display">Membre en Règle</h4>
-                        <p className="text-xs text-emerald-800">
-                          Aucune pénalité ou sanction n&apos;est actuellement en attente pour {modalMember.nom} {modalMember.prenom}.
-                        </p>
-                      </div>
-                    );
-                  }
+                <button
+                  type="button"
+                  onClick={() => setModalTab('penalite')}
+                  className={`py-2 px-2 text-xs font-bold rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                    modalTab === 'penalite'
+                      ? 'bg-white text-purple-700 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <span>2. Pénalités</span>
+                  {modalMember.penalties && modalMember.penalties.filter(p => p.status === 'PENDING').length > 0 && (
+                    <span className="px-1.5 py-0.2 bg-rose-600 text-white rounded-full text-[10px]">
+                      {modalMember.penalties.filter(p => p.status === 'PENDING').length}
+                    </span>
+                  )}
+                </button>
+              </div>
 
-                  return (
-                    <div className="space-y-3">
-                      <p className="text-xs text-slate-600">
-                        Sélectionnez la pénalité à solder. Le montant exact saisi par le censeur ({selectedPenalty ? selectedPenalty.amount.toLocaleString('fr-FR') : '...'} FCFA) est appliqué.
-                      </p>
+              {/* FORMULAIRE A : COTISATIONS */}
+              {modalTab === 'cotisation' && (
+                <form id="cotisation-form" onSubmit={handleConfirmCotisation} className="space-y-4 pt-1">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                      Mois à régler ({getCotisationAmountForUser(modalMember).toLocaleString('fr-FR')} FCFA / mois)
+                    </label>
+                    {/* Grille responsive 3 colonnes sur mobile, 5 colonnes sur desktop */}
+                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
+                      {[9, 10, 11, 12, 1, 2, 3, 4, 5, 6].map((moisNum) => {
+                        const isSelected = selectedMonthsToPay.includes(moisNum);
+                        const alreadyPaid = modalMember.cotisations.some(
+                          (c) => c.mois === moisNum && c.isPaid
+                        );
 
-                      <div className="space-y-2 max-h-56 overflow-y-auto">
-                        {memberPendingPens.map((p) => (
-                          <div
-                            key={p.id}
-                            className={`p-3 rounded-xl border transition flex items-center justify-between gap-3 ${
-                              selectedPenalty?.id === p.id
-                                ? 'bg-purple-50 border-purple-400'
-                                : 'bg-slate-50 border-slate-200 hover:border-slate-300'
-                            }`}
-                          >
-                            <div className="space-y-0.5">
-                              <span className="text-[10px] text-slate-500 font-mono block">
-                                Émise le {new Date(p.createdAt).toLocaleDateString('fr-FR')}
-                              </span>
-                              <strong className="text-xs text-slate-900 block font-display">
-                                {p.reason}
-                              </strong>
-                              <span className="text-xs font-black text-purple-700 font-mono">
-                                {p.amount.toLocaleString('fr-FR')} FCFA
-                              </span>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => setSelectedPenalty(p)}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                selectedPenalty?.id === p.id
-                                  ? 'bg-purple-700 text-white'
-                                  : 'bg-white text-purple-700 border border-purple-300 hover:bg-purple-50'
-                              }`}
-                            >
-                              {selectedPenalty?.id === p.id ? 'Sélectionnée' : 'Choisir'}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-
-                      {selectedPenalty && (
-                        <div className="space-y-3 pt-2 border-t border-slate-100">
-                          {/* Mode de règlement pénalité */}
-                          <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
-                              Mode de règlement de la pénalité
-                            </label>
-                            <div className="grid grid-cols-3 gap-2">
-                              {['Espèces', 'Mobile Money', 'Virement'].map((m) => (
-                                <button
-                                  type="button"
-                                  key={m}
-                                  onClick={() => setPaymentMethod(m)}
-                                  className={`p-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
-                                    paymentMethod === m
-                                      ? 'bg-purple-700 text-white border-purple-700 shadow-xs'
-                                      : 'bg-white border-slate-200 text-slate-700'
-                                  }`}
-                                >
-                                  {m}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
-                              Numéro WhatsApp (Envoi automatique reçu)
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="Ex: 677000000"
-                              value={whatsappPhone}
-                              onChange={(e) => setWhatsappPhone(e.target.value)}
-                              className="input-nasa font-mono text-xs w-full"
-                            />
-                          </div>
-
-                          <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl flex items-center justify-between text-xs">
-                            <span className="font-bold text-purple-900">Montant exact fixé par le Censeur :</span>
-                            <span className="text-base font-black text-purple-950 font-display">
-                              {selectedPenalty.amount.toLocaleString('fr-FR')} FCFA
-                            </span>
-                          </div>
-
+                        return (
                           <button
                             type="button"
-                            disabled={isProcessingPenaltyPay}
-                            onClick={() => handleConfirmPenaltyPay(selectedPenalty)}
-                            className="btn-nasa w-full py-2.5 text-xs font-bold cursor-pointer disabled:opacity-50"
+                            key={moisNum}
+                            onClick={() => {
+                              if (alreadyPaid) return;
+                              if (isSelected) {
+                                setSelectedMonthsToPay(selectedMonthsToPay.filter((m) => m !== moisNum));
+                              } else {
+                                setSelectedMonthsToPay([...selectedMonthsToPay, moisNum]);
+                              }
+                            }}
+                            disabled={alreadyPaid}
+                            className={`p-2 rounded-xl text-xs font-bold border transition text-center cursor-pointer min-h-[40px] flex flex-col items-center justify-center ${
+                              alreadyPaid
+                                ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                                : isSelected
+                                ? 'bg-[#0B3D91] border-[#0B3D91] text-white shadow-xs'
+                                : 'bg-white border-slate-200 text-slate-700 hover:border-[#0B3D91]'
+                            }`}
                           >
-                            {isProcessingPenaltyPay
-                              ? 'Validation...'
-                              : `Valider le paiement de ${selectedPenalty.amount.toLocaleString('fr-FR')} FCFA & Reçu WhatsApp`}
+                            <span>{MONTH_NAMES[moisNum - 1]}</span>
+                            {alreadyPaid && <span className="text-[9px] text-[#16A34A] leading-none">Réglé</span>}
                           </button>
-                        </div>
-                      )}
+                        );
+                      })}
                     </div>
-                  );
-                })()}
-              </div>
-            )}
+                  </div>
+
+                  {/* Mode de règlement */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                      Mode de règlement
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {['Mobile Money', 'Espèces', 'Virement'].map((method) => (
+                        <button
+                          type="button"
+                          key={method}
+                          onClick={() => setPaymentMethod(method)}
+                          className={`p-2 rounded-xl text-xs font-bold border transition cursor-pointer min-h-[40px] ${
+                            paymentMethod === method
+                              ? 'bg-[#16A34A] border-[#16A34A] text-white shadow-xs'
+                              : 'bg-white border-slate-200 text-slate-700 hover:border-slate-400'
+                          }`}
+                        >
+                          {method}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Référence de transaction */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
+                      Référence de reçu ou transaction
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: OM-2026-9941 ou RECU-001"
+                      value={paymentRef}
+                      onChange={(e) => setPaymentRef(e.target.value)}
+                      className="input-nasa font-mono text-xs w-full"
+                    />
+                  </div>
+
+                  {/* Numéro WhatsApp pour transmission instantanée du reçu */}
+                  <div>
+                    <div className="flex flex-wrap items-center justify-between gap-1 mb-1">
+                      <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                        <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
+                        Numéro WhatsApp du Membre
+                      </label>
+                      <label className="flex items-center gap-1.5 text-[11px] text-slate-500 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={sendWhatsAppOnConfirm}
+                          onChange={(e) => setSendWhatsAppOnConfirm(e.target.checked)}
+                          className="rounded text-emerald-600 focus:ring-emerald-500"
+                        />
+                        <span>Envoyer reçu</span>
+                      </label>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Ex: 677000000 ou 237677000000"
+                      value={whatsappPhone}
+                      onChange={(e) => setWhatsappPhone(e.target.value)}
+                      className="input-nasa font-mono text-xs w-full"
+                    />
+                  </div>
+
+                  {/* Total */}
+                  <div className="p-3 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl flex items-center justify-between text-xs">
+                    <span className="font-bold text-[#16A34A]">Total à encaisser :</span>
+                    <span className="text-base sm:text-lg font-black text-slate-900 font-display">
+                      {(selectedMonthsToPay.length * getCotisationAmountForUser(modalMember)).toLocaleString('fr-FR')} FCFA
+                    </span>
+                  </div>
+                </form>
+              )}
+
+              {/* FORMULAIRE B : PÉNALITÉS DU MEMBRE */}
+              {modalTab === 'penalite' && (
+                <div className="space-y-4 pt-1">
+                  {(() => {
+                    const memberPendingPens = (modalMember.penalties || []).filter(p => p.status === 'PENDING');
+
+                    if (memberPendingPens.length === 0) {
+                      return (
+                        <div className="p-6 bg-emerald-50 rounded-2xl border border-emerald-200 text-center space-y-2">
+                          <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto" />
+                          <h4 className="text-sm font-bold text-emerald-950 font-display">Membre en Règle</h4>
+                          <p className="text-xs text-emerald-800">
+                            Aucune pénalité ou sanction n&apos;est actuellement en attente pour {modalMember.nom} {modalMember.prenom}.
+                          </p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="space-y-3">
+                        <p className="text-xs text-slate-600">
+                          Sélectionnez la pénalité à solder. Le montant exact fixé par le censeur ({selectedPenalty ? selectedPenalty.amount.toLocaleString('fr-FR') : '...'} FCFA) est appliqué.
+                        </p>
+
+                        <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+                          {memberPendingPens.map((p) => (
+                            <div
+                              key={p.id}
+                              className={`p-3 rounded-xl border transition flex items-center justify-between gap-3 ${
+                                selectedPenalty?.id === p.id
+                                  ? 'bg-purple-50 border-purple-400'
+                                  : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+                              }`}
+                            >
+                              <div className="space-y-0.5">
+                                <span className="text-[10px] text-slate-500 font-mono block">
+                                  Émise le {new Date(p.createdAt).toLocaleDateString('fr-FR')}
+                                </span>
+                                <strong className="text-xs text-slate-900 block font-display">
+                                  {p.reason}
+                                </strong>
+                                <span className="text-xs font-black text-purple-700 font-mono">
+                                  {p.amount.toLocaleString('fr-FR')} FCFA
+                                </span>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => setSelectedPenalty(p)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer shrink-0 ${
+                                  selectedPenalty?.id === p.id
+                                    ? 'bg-purple-700 text-white'
+                                    : 'bg-white text-purple-700 border border-purple-300 hover:bg-purple-50'
+                                }`}
+                              >
+                                {selectedPenalty?.id === p.id ? 'Choisi' : 'Choisir'}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+
+                        {selectedPenalty && (
+                          <div className="space-y-3 pt-2 border-t border-slate-100">
+                            {/* Mode de règlement pénalité */}
+                            <div>
+                              <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
+                                Mode de règlement
+                              </label>
+                              <div className="grid grid-cols-3 gap-2">
+                                {['Espèces', 'Mobile Money', 'Virement'].map((m) => (
+                                  <button
+                                    type="button"
+                                    key={m}
+                                    onClick={() => setPaymentMethod(m)}
+                                    className={`p-2 rounded-xl text-xs font-bold border transition cursor-pointer min-h-[40px] ${
+                                      paymentMethod === m
+                                        ? 'bg-purple-700 text-white border-purple-700 shadow-xs'
+                                        : 'bg-white border-slate-200 text-slate-700'
+                                    }`}
+                                  >
+                                    {m}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
+                                Numéro WhatsApp (Envoi reçu)
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="Ex: 677000000"
+                                value={whatsappPhone}
+                                onChange={(e) => setWhatsappPhone(e.target.value)}
+                                className="input-nasa font-mono text-xs w-full"
+                              />
+                            </div>
+
+                            <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl flex items-center justify-between text-xs">
+                              <span className="font-bold text-purple-900">Montant exact fixé par le Censeur :</span>
+                              <span className="text-base font-black text-purple-950 font-display">
+                                {selectedPenalty.amount.toLocaleString('fr-FR')} FCFA
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+
+            {/* Footer fixe avec boutons d'action toujours visibles */}
+            <div className="p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex gap-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setModalMember(null)}
+                className="flex-1 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer min-h-[44px]"
+              >
+                Annuler
+              </button>
+
+              {modalTab === 'cotisation' ? (
+                <button
+                  type="submit"
+                  form="cotisation-form"
+                  disabled={selectedMonthsToPay.length === 0}
+                  className="btn-nasa flex-1 py-3 text-xs font-bold cursor-pointer disabled:opacity-50 min-h-[44px]"
+                >
+                  Valider &amp; Reçu
+                </button>
+              ) : selectedPenalty ? (
+                <button
+                  type="button"
+                  disabled={isProcessingPenaltyPay}
+                  onClick={() => handleConfirmPenaltyPay(selectedPenalty)}
+                  className="bg-purple-700 hover:bg-purple-800 text-white flex-1 py-3 rounded-xl text-xs font-bold cursor-pointer transition shadow-md min-h-[44px]"
+                >
+                  {isProcessingPenaltyPay
+                    ? 'Validation...'
+                    : `Payer ${selectedPenalty.amount.toLocaleString('fr-FR')} F & Reçu`}
+                </button>
+              ) : null}
+            </div>
           </div>
         </div>
       )}
 
-      {/* 6. MODAL DE DÉCAISSEMENT PAR SCAN QR (COMMISSAIRE AUX COMPTES) */}
+      {/* 6. MODAL DE DÉCAISSEMENT PAR SCAN QR (COMMISSAIRE AUX COMPTES) - 100% RESPONSIVE SMARTPHONE */}
       {isDecaissementModalOpen && (
         <div className="modal-backdrop">
-          <div className="modal-card p-5 sm:p-6 space-y-4 max-w-lg w-full bg-white">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700">
+          <div className="modal-card max-w-lg w-full bg-white flex flex-col max-h-[92dvh] sm:max-h-[88vh] overflow-hidden rounded-2xl shadow-2xl">
+            {/* Header fixe */}
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white z-10">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0">
                   <ArrowDownLeft className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 font-display">Bordereau de Décaissement Officiel</h3>
-                  <p className="text-xs text-slate-500">Certification de sortie de fonds par le Commissaire aux Comptes</p>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 font-display leading-tight">Bordereau de Décaissement</h3>
+                  <p className="text-[11px] text-slate-500 leading-tight">Certification Commissaire aux Comptes</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsDecaissementModalOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg transition cursor-pointer"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer shrink-0"
+                aria-label="Fermer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Récipiendaire scanné ou sélectionné */}
-            <div className="p-3.5 bg-amber-50/60 rounded-xl border border-amber-200 text-xs space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-amber-900 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-amber-600" /> Récipiendaire Authentifié par Scan
-                </span>
-                <span className="pill-green text-[10px] px-2 py-0.5 rounded-full font-bold">
-                  Badge QR Validé
-                </span>
-              </div>
-              {decaissementMember ? (
-                <div className="text-slate-900">
-                  <strong className="text-sm block font-display">{decaissementMember.nom} {decaissementMember.prenom}</strong>
-                  <span className="font-mono text-[#0B3D91] text-xs font-bold">{decaissementMember.matricule}</span>
-                  <span className="text-slate-500 ml-2">({decaissementMember.niveau} · {decaissementMember.role})</span>
+            {/* Corps scrollable */}
+            <div className="overflow-y-auto custom-scrollbar p-4 sm:p-5 space-y-4 flex-1">
+              {/* Récipiendaire scanné ou sélectionné */}
+              <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200 text-xs space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-amber-900 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-600" /> Récipiendaire Authentifié
+                  </span>
+                  <span className="pill-green text-[10px] px-2 py-0.5 rounded-full font-bold">
+                    Badge QR Validé
+                  </span>
                 </div>
-              ) : (
-                <div className="text-slate-500 italic">Aucun membre sélectionné.</div>
-              )}
+                {decaissementMember ? (
+                  <div className="text-slate-900">
+                    <strong className="text-sm block font-display">{decaissementMember.nom} {decaissementMember.prenom}</strong>
+                    <span className="font-mono text-[#0B3D91] text-xs font-bold">{decaissementMember.matricule}</span>
+                    <span className="text-slate-500 ml-2">({decaissementMember.niveau} · {decaissementMember.role})</span>
+                  </div>
+                ) : (
+                  <div className="text-slate-500 italic">Aucun membre sélectionné.</div>
+                )}
+              </div>
+
+              {/* Formulaire de décaissement */}
+              <form id="decaissement-form" onSubmit={handleConfirmDecaissement} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
+                    Montant à Décaisser (FCFA) *
+                  </label>
+                  <input
+                    type="number"
+                    min="500"
+                    step="500"
+                    required
+                    value={decaissementAmount}
+                    onChange={(e) => setDecaissementAmount(Number(e.target.value))}
+                    className="input-nasa font-mono text-sm w-full font-bold text-amber-900"
+                    placeholder="Ex: 15000"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
+                    Catégorie du Décaissement *
+                  </label>
+                  <select
+                    value={decaissementCategory}
+                    onChange={(e) => setDecaissementCategory(e.target.value as any)}
+                    className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none cursor-pointer w-full"
+                  >
+                    <option value="PROJET_LABO">Projet R&amp;D &amp; Matériel Laboratoire</option>
+                    <option value="EVENEMENT">Événement &amp; Organisation Hackathon</option>
+                    <option value="MEMBRE">Dédommagement / Frais de Mission Membre</option>
+                    <option value="FOURNISSEUR">Règlement Prestataire / Fournisseur</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
+                    Motif Précis &amp; Justification *
+                  </label>
+                  <textarea
+                    required
+                    rows={3}
+                    value={decaissementMotif}
+                    onChange={(e) => setDecaissementMotif(e.target.value)}
+                    placeholder="Ex: Achat composants électroniques ESP32, capteurs LoRa et bobines pour le labo..."
+                    className="input-nasa text-xs w-full resize-none"
+                  />
+                </div>
+
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600 space-y-1">
+                  <span className="font-bold text-slate-900 block">Certificat de conformité :</span>
+                  <p>
+                    Ce décaissement sera contresigné numériquement par <strong className="text-slate-900">{currentUser.nom} {currentUser.prenom}</strong> ({currentUser.role}) et consigné dans le Grand Livre.
+                  </p>
+                </div>
+              </form>
             </div>
 
-            {/* Formulaire de décaissement */}
-            <form onSubmit={handleConfirmDecaissement} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
-                  Montant à Décaisser (FCFA) *
-                </label>
-                <input
-                  type="number"
-                  min="500"
-                  step="500"
-                  required
-                  value={decaissementAmount}
-                  onChange={(e) => setDecaissementAmount(Number(e.target.value))}
-                  className="input-nasa font-mono text-sm w-full font-bold text-amber-900"
-                  placeholder="Ex: 15000"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
-                  Affectation / Catégorie du Décaissement *
-                </label>
-                <select
-                  value={decaissementCategory}
-                  onChange={(e) => setDecaissementCategory(e.target.value as any)}
-                  className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none cursor-pointer w-full"
-                >
-                  <option value="PROJET_LABO">Projet R&amp;D &amp; Matériel Laboratoire</option>
-                  <option value="EVENEMENT">Événement &amp; Organisation Hackathon</option>
-                  <option value="MEMBRE">Dédommagement / Frais de Mission Membre</option>
-                  <option value="FOURNISSEUR">Règlement Prestataire / Fournisseur</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
-                  Motif Précis &amp; Justification du Décaissement *
-                </label>
-                <textarea
-                  required
-                  rows={3}
-                  value={decaissementMotif}
-                  onChange={(e) => setDecaissementMotif(e.target.value)}
-                  placeholder="Ex: Achat composants électroniques ESP32, capteurs LoRa et bobines d'impression 3D pour le projet Météo..."
-                  className="input-nasa text-xs w-full resize-none"
-                />
-              </div>
-
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 space-y-1">
-                <span className="font-bold text-slate-900 block">Certificat de conformité :</span>
-                <p>
-                  Ce décaissement sera contresigné numériquement par <strong className="text-slate-900">{currentUser.nom} {currentUser.prenom}</strong> ({currentUser.role}) et enregistré dans le Grand Livre d&apos;Audit.
-                </p>
-              </div>
-
-              <div className="flex gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsDecaissementModalOpen(false)}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="bg-amber-600 hover:bg-amber-700 text-white flex-1 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition shadow-md"
-                >
-                  Certifier &amp; Émettre Bordereau PDF
-                </button>
-              </div>
-            </form>
+            {/* Footer fixe */}
+            <div className="p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex gap-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsDecaissementModalOpen(false)}
+                className="flex-1 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer min-h-[44px]"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                form="decaissement-form"
+                className="bg-amber-600 hover:bg-amber-700 text-white flex-1 py-3 rounded-xl text-xs font-bold cursor-pointer transition shadow-md min-h-[44px]"
+              >
+                Certifier &amp; Bordereau PDF
+              </button>
+            </div>
           </div>
         </div>
       )}

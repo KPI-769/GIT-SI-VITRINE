@@ -271,22 +271,42 @@ h1, h2, h3, h4, h5, h6 {
   position: fixed;
   inset: 0;
   z-index: 50;
-  background: rgba(15, 23, 42, 0.7);
+  background: rgba(15, 23, 42, 0.75);
   backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   animation: fadeIn .2s ease;
 }
+@media (max-width: 640px) {
+  .modal-backdrop {
+    padding: 10px;
+    align-items: center;
+  }
+}
+
 .modal-card {
   background: var(--surface-0);
   border: 1px solid var(--border-subtle);
   border-radius: 20px;
   box-shadow: var(--shadow-xl);
   width: 100%;
-  max-width: 480px;
+  max-width: 520px;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   animation: scaleIn .25s var(--ease-out);
+  margin: auto;
+}
+@media (max-width: 640px) {
+  .modal-card {
+    border-radius: 18px;
+    max-height: calc(100dvh - 20px);
+    padding: 1rem !important;
+  }
 }
 
 .status-dot {

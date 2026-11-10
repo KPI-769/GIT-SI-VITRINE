@@ -76,6 +76,7 @@ export const ROLE_LABELS: Record<Role, { label: string; badgeClass: string }> = 
   COMMUNICATION: { label: 'Resp. Communication', badgeClass: 'bg-indigo-100 text-indigo-900 border-indigo-300' },
   FORMATION: { label: 'Resp. Formation & R&D', badgeClass: 'bg-amber-100 text-amber-900 border-amber-300' },
   CONSEILLER: { label: 'Conseiller Spécial', badgeClass: 'bg-teal-100 text-teal-900 border-teal-300' },
+  COMMISSAIRE_AUX_COMPTES: { label: 'Commissaire aux Comptes', badgeClass: 'bg-emerald-100 text-emerald-900 border-emerald-300' },
   MEMBER: { label: 'Membre / Étudiant', badgeClass: 'bg-slate-100 text-slate-800 border-slate-300' },
 };
 

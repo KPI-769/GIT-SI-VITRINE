@@ -1,7 +1,7 @@
 // Données officielles dédoublonnées des membres de la Division Génie Infotronique (GIT)
 // Saint Jérôme Polytechnique · Douala
 // Source : fiche de cont.txt (99 membres uniques)
-import { User, Cotisation, CURRENT_YEAR, DEFAULT_COTISATION_AMOUNT, Role } from './types';
+import { User, Cotisation, CURRENT_YEAR, COTISATION_AMOUNT_MEMBER, COTISATION_AMOUNT_BUREAU, Role } from './types';
 
 export interface OfficialMember {
   id: string;
@@ -845,7 +845,7 @@ export function generateOfficialUsers(): User[] {
       id: `cot_${userId}_${mois}`,
       mois,
       annee: CURRENT_YEAR,
-      montant: DEFAULT_COTISATION_AMOUNT,
+      montant: COTISATION_AMOUNT_MEMBER, // 1 000 FCFA pour les membres
       isPaid: false,
       userId,
     }));
@@ -1102,8 +1102,18 @@ export const SJP_BUREAU_MEMBERS: BureauMemberOfficial[] = [
 
 export function generateBureauUsers(): User[] {
   return SJP_BUREAU_MEMBERS.map((bm) => {
+    const userId = `usr_${bm.matricule.toLowerCase().replace(/-/g, '_')}`;
+    const initialCotisations: Cotisation[] = [9, 10, 11, 12, 1, 2, 3, 4, 5, 6].map((mois) => ({
+      id: `cot_${userId}_${mois}`,
+      mois,
+      annee: CURRENT_YEAR,
+      montant: COTISATION_AMOUNT_BUREAU, // 1 500 FCFA pour les membres du bureau
+      isPaid: false,
+      userId,
+    }));
+
     return {
-      id: `usr_${bm.matricule.toLowerCase().replace(/-/g, '_')}`,
+      id: userId,
       matricule: bm.matricule,
       nom: bm.nom,
       prenom: bm.prenom,
@@ -1119,7 +1129,7 @@ export function generateBureauUsers(): User[] {
       isWifiAllowed: true,
       isLabAllowed: true,
       macAddresses: [],
-      cotisations: [],
+      cotisations: initialCotisations,
       penalties: [],
       certifications: [],
       passwordResetRequested: false,

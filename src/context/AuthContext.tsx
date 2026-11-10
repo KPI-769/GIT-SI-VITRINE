@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Role, Payment, Cotisation, Penalty } from '@/lib/types';
-import { INITIAL_USERS, INITIAL_PAYMENTS, DEFAULT_COTISATION_AMOUNT, CURRENT_YEAR, ADMIN_USER } from '@/lib/store';
+import { User, Role, Payment, Cotisation, Penalty, getCotisationAmountForUser } from '@/lib/types';
+import { INITIAL_USERS, INITIAL_PAYMENTS, DEFAULT_COTISATION_AMOUNT, CURRENT_YEAR, ADMIN_USER, logAdminAction } from '@/lib/store';
 
 interface AuthContextType {
   isInitialized: boolean;
@@ -391,13 +391,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }) => {
     const paymentId = `pay_${Date.now()}`;
     const newCotisationIds: string[] = [];
+    const targetMember = allUsers.find(u => u.id === paymentData.memberId);
+    const unitPrice = getCotisationAmountForUser(targetMember);
 
     const updated = allUsers.map((u) => {
       if (u.id === paymentData.memberId) {
         const updatedCotisations = u.cotisations.map((cot: Cotisation) => {
           if (paymentData.months.includes(cot.mois)) {
             newCotisationIds.push(cot.id);
-            return { ...cot, isPaid: true, paymentId };
+            return { ...cot, isPaid: true, montant: unitPrice, paymentId };
           }
           return cot;
         });
@@ -411,7 +413,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               id: newCotId,
               mois: m,
               annee: CURRENT_YEAR,
-              montant: DEFAULT_COTISATION_AMOUNT,
+              montant: unitPrice,
               isPaid: true,
               userId: u.id,
               paymentId,
@@ -438,9 +440,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }),
     }).catch((err) => console.error('Erreur sync cotisation MySQL:', err));
 
+    const totalAmount = paymentData.months.length * unitPrice;
     const newPayment: Payment = {
       id: paymentId,
-      montantTotal: paymentData.months.length * DEFAULT_COTISATION_AMOUNT,
+      montantTotal: totalAmount,
       method: paymentData.method,
       reference: paymentData.reference,
       treasurerId: currentUser?.id || 'usr_treasurer',
@@ -449,10 +452,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     persistPayments([newPayment, ...payments]);
+
+    // Journalisation de la traçabilité
+    logAdminAction({
+      action: 'COTISATION_ENCAISSEE',
+      actorId: currentUser?.id || 'usr_treasurer',
+      actorName: `${currentUser?.nom || 'Trésorière'} ${currentUser?.prenom || ''}`.trim(),
+      actorRole: currentUser?.role || 'TREASURER',
+      targetId: targetMember?.id,
+      targetName: targetMember ? `${targetMember.nom} ${targetMember.prenom}` : undefined,
+      targetMatricule: targetMember?.matricule,
+      amount: totalAmount,
+      details: `Encaissement cotisation ${paymentData.months.length} mois (${totalAmount.toLocaleString('fr-FR')} FCFA) via ${paymentData.method}${paymentData.reference ? ` - Réf: ${paymentData.reference}` : ''}`,
+    });
   };
 
   // Changement de rôle (Admin)
   const updateUserRole = (userId: string, newRole: Role) => {
+    const target = allUsers.find((u) => u.id === userId);
     const updated = allUsers.map((u) => (u.id === userId ? { ...u, role: newRole } : u));
     persistUsers(updated);
     fetch(`/api/users/${userId}`, {
@@ -460,6 +477,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ role: newRole }),
     }).catch((err) => console.error('Erreur sync role MySQL:', err));
+
+    logAdminAction({
+      action: 'ROLE_MODIFIE',
+      actorId: currentUser?.id || 'usr_admin',
+      actorName: `${currentUser?.nom || 'Admin'} ${currentUser?.prenom || ''}`.trim(),
+      actorRole: currentUser?.role || 'ADMIN',
+      targetId: target?.id,
+      targetName: target ? `${target.nom} ${target.prenom}` : undefined,
+      targetMatricule: target?.matricule,
+      details: `Attribution du rôle "${newRole}"`,
+    });
   };
 
   // Bascule du statut actif/suspendu (Admin)
@@ -554,6 +582,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify({ resetPassword: true, justification }),
     }).catch((err) => console.error('Erreur sync reset password MySQL:', err));
 
+    logAdminAction({
+      action: 'MOT_DE_PASSE_REINITIALISE',
+      actorId: currentUser?.id || 'usr_admin',
+      actorName: `${currentUser?.nom || 'Admin'} ${currentUser?.prenom || ''}`.trim(),
+      actorRole: currentUser?.role || 'ADMIN',
+      targetId: targetUser.id,
+      targetName: `${targetUser.nom} ${targetUser.prenom}`,
+      targetMatricule: targetUser.matricule,
+      details: `Réinitialisation sur 'git2026'. Motif: "${justification.trim() || targetUser.passwordResetReason || 'Demande expresse membre'}"`,
+    });
+
     return {
       success: true,
       message: `Mot de passe de ${targetUser.nom} ${targetUser.prenom} (${targetUser.matricule}) réinitialisé avec succès sur 'git2026'. Le membre sera tenu de le changer à sa prochaine connexion. Justification consignée : "${justification.trim() || targetUser.passwordResetReason}".`,
@@ -595,6 +634,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     persistUsers(updated);
+
+    const targetUser = allUsers.find(u => u.id === data.userId);
+    logAdminAction({
+      action: 'PENALITE_ENREGISTREE',
+      actorId: currentUser?.id || data.censorId,
+      actorName: `${currentUser?.nom || 'Censeur'} ${currentUser?.prenom || ''}`.trim(),
+      actorRole: currentUser?.role || 'CENSEUR',
+      targetId: targetUser?.id,
+      targetName: targetUser ? `${targetUser.nom} ${targetUser.prenom}` : undefined,
+      targetMatricule: targetUser?.matricule,
+      amount: data.amount,
+      details: `${data.isRefusal ? '[Demande Sanction Refus Scan] ' : ''}${data.reason.trim()} (${data.amount.toLocaleString('fr-FR')} FCFA)`,
+    });
 
     try {
       const res = await fetch('/api/penalties', {
@@ -711,6 +763,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     persistUsers(updated);
+
+    const paidMember = allUsers.find(u => u.id === data.userId);
+    const targetPenalty = paidMember?.penalties?.find(p => p.id === data.penaltyId);
+    logAdminAction({
+      action: 'PENALITE_PAYEE',
+      actorId: currentUser?.id || 'usr_treasurer',
+      actorName: `${currentUser?.nom || 'Trésorière'} ${currentUser?.prenom || ''}`.trim(),
+      actorRole: currentUser?.role || 'TREASURER',
+      targetId: paidMember?.id,
+      targetName: paidMember ? `${paidMember.nom} ${paidMember.prenom}` : undefined,
+      targetMatricule: paidMember?.matricule,
+      amount: targetPenalty?.amount,
+      details: `Règlement pénalité (${targetPenalty?.amount || 0} FCFA) via ${data.method}${data.reference ? ` - Réf: ${data.reference}` : ''}`,
+    });
 
     try {
       const res = await fetch(`/api/penalties/${data.penaltyId}`, {

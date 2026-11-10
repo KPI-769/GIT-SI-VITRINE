@@ -684,3 +684,173 @@ export function generateReceiptPdf(params: {
   doc.save(filename);
 }
 
+export function sendReceiptViaWhatsApp(params: {
+  phone: string;
+  receiptType: 'COTISATION' | 'PENALITE' | 'DECAISSEMENT';
+  receiptNumber: string;
+  member: { nom: string; prenom: string; matricule: string };
+  amount: number;
+  details: string;
+  method?: string;
+  date?: string;
+}) {
+  const { phone, receiptType, receiptNumber, member, amount, details, method, date } = params;
+  
+  let cleanPhone = phone.replace(/[\s\-\(\)\+]/g, '');
+  if (cleanPhone.length === 9 && cleanPhone.startsWith('6')) {
+    cleanPhone = `237${cleanPhone}`;
+  }
+
+  const formattedDate = date || new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  const typeLabel = receiptType === 'COTISATION' ? 'COTISATION MENSUELLE' : receiptType === 'PENALITE' ? 'RÈGLEMENT PÉNALITÉ' : 'DÉCAISSEMENT CERTIFIÉ';
+
+  const message = `🏛️ *DIVISION GÉNIE INFOTRONIQUE (GIT-SJD)*\n` +
+    `📋 *REÇU OFFICIEL DE PAIEMENT NUMÉRIQUE*\n` +
+    `---------------------------------------\n` +
+    `🔖 *Type :* ${typeLabel}\n` +
+    `📄 *N° Reçu :* ${receiptNumber}\n` +
+    `👤 *Membre :* ${member.nom} ${member.prenom} (${member.matricule})\n` +
+    `💰 *Montant :* ${amount.toLocaleString('fr-FR')} FCFA\n` +
+    `💳 *Mode :* ${method || 'Espèces'}\n` +
+    `📅 *Date :* ${formattedDate}\n` +
+    `📝 *Motif :* ${details}\n` +
+    `✅ *Statut :* ENCAISSÉ & CERTIFIÉ CONFORME\n` +
+    `---------------------------------------\n` +
+    `Ce document électronique fait foi de régularisation devant la Trésorerie, le Censeur et l'Administration GIT-SJD.`;
+
+  const encodedMessage = encodeURIComponent(message);
+  const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
+  
+  if (typeof window !== 'undefined') {
+    window.open(whatsappUrl, '_blank');
+  }
+  return whatsappUrl;
+}
+
+export function generateDecaissementPdf(params: {
+  receiptNumber: string;
+  member: { nom: string; prenom: string; matricule: string; niveau?: string };
+  commissaireName: string;
+  amount: number;
+  motif: string;
+  beneficiaireCategory: string;
+  date?: string;
+}) {
+  const {
+    receiptNumber,
+    member,
+    commissaireName,
+    amount,
+    motif,
+    beneficiaireCategory,
+    date = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+  } = params;
+
+  const doc = new jsPDF();
+
+  // En-tête
+  doc.setFillColor(15, 23, 42); // Slate 900
+  doc.rect(0, 0, 210, 32, 'F');
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(13);
+  doc.setFont('helvetica', 'bold');
+  doc.text('DIVISION GÉNIE INFOTRONIQUE (GIT-SJD)', 105, 13, { align: 'center' });
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text('COMMISSARIAT AUX COMPTES & AUDIT DE CAISSE', 105, 20, { align: 'center' });
+  doc.text('BORDEREAU DE DÉCAISSEMENT CERTIFIÉ PAR SCAN', 105, 27, { align: 'center' });
+
+  // Référence & Date
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`RÉFÉRENCE DÉCAISSEMENT : ${receiptNumber}`, 25, 45);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Date de remise des fonds : ${date}`, 25, 52);
+  doc.text(`Contrôlé & certifié par le Commissaire aux Comptes : ${commissaireName}`, 25, 59);
+
+  // Cadre Membre Récipiendaire
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(226, 232, 240);
+  doc.roundedRect(25, 68, 160, 48, 2, 2, 'FD');
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 41, 59);
+  doc.text('RÉCIPIENDAIRE CERTIFIÉ (PAR SCAN BADGE QR) :', 32, 78);
+
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Nom & Prénom : ${member.nom} ${member.prenom}`, 32, 88);
+  doc.text(`Matricule : ${member.matricule}`, 32, 96);
+  doc.text(`Catégorie : ${beneficiaireCategory}`, 32, 104);
+
+  // Tableau
+  autoTable(doc, {
+    startY: 125,
+    margin: { left: 25, right: 25 },
+    head: [['Motif du Décaissement / Affectation', 'Bénéficiaire', 'Certification Scan', 'Montant Remis']],
+    body: [
+      [
+        motif,
+        `${member.nom} ${member.prenom}`,
+        'Badge QR Authentifié',
+        `${amount.toLocaleString('fr-FR')} FCFA`
+      ]
+    ],
+    theme: 'grid',
+    headStyles: {
+      fillColor: [15, 23, 42],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: 9,
+    },
+    bodyStyles: {
+      fontSize: 9,
+      textColor: [15, 23, 42],
+    },
+    columnStyles: {
+      0: { cellWidth: 70 },
+      1: { cellWidth: 35 },
+      2: { cellWidth: 30 },
+      3: { cellWidth: 25, fontStyle: 'bold', halign: 'right' },
+    },
+  });
+
+  const finalY = (doc as any).lastAutoTable?.finalY || 160;
+
+  // Statut
+  doc.setFillColor(254, 242, 242);
+  doc.setDrawColor(254, 202, 202);
+  doc.roundedRect(25, finalY + 8, 160, 22, 2, 2, 'FD');
+
+  doc.setTextColor(153, 27, 27);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('DÉCAISSEMENT EN ESPÈCES EFFECTUÉ & ARCHIVÉ AU GRAND LIVRE', 32, finalY + 18);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text(`Montant débité de la caisse : ${amount.toLocaleString('fr-FR')} Francs CFA.`, 32, finalY + 24);
+
+  // Signatures
+  doc.setDrawColor(226, 232, 240);
+  doc.line(25, finalY + 45, 185, finalY + 45);
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
+  doc.text('Le Membre Récipiendaire', 40, finalY + 54);
+  doc.text('Le Commissaire aux Comptes', 135, finalY + 54);
+
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'italic');
+  doc.setTextColor(100, 116, 139);
+  doc.text('(Décharge signée)', 40, finalY + 62);
+  doc.text(commissaireName, 135, finalY + 62);
+  doc.text('Visa & Enregistrement Audit', 135, finalY + 70);
+
+  const filename = `DECAISSEMENT_${member.matricule}_${receiptNumber}.pdf`;
+  doc.save(filename);
+}
+

@@ -25,8 +25,8 @@ export default function TresorierPage() {
     );
   }
 
-  // Vérification des privilèges TREASURER ou ADMIN
-  if (currentUser.role !== 'TREASURER' && currentUser.role !== 'ADMIN') {
+  // Vérification des privilèges TREASURER, COMMISSAIRE_AUX_COMPTES ou ADMIN
+  if (currentUser.role !== 'TREASURER' && currentUser.role !== 'ADMIN' && currentUser.role !== 'COMMISSAIRE_AUX_COMPTES' && currentUser.role !== 'CONSEILLER') {
     return (
       <div className="min-h-screen flex flex-col font-sans" style={{ background: 'var(--surface-1)' }}>
         <AppHeader />
@@ -35,9 +35,9 @@ export default function TresorierPage() {
             <div className="w-16 h-16 rounded-2xl bg-[#FFF0EE] text-[#FC3D21] flex items-center justify-center mx-auto border border-[#FECACA]">
               <ShieldAlert className="w-8 h-8" />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 font-display">Accès Réservé au Trésorier</h2>
+            <h2 className="text-xl font-bold text-slate-900 font-display">Accès Réservé à la Gestion Financière</h2>
             <p className="text-xs text-slate-600">
-              Votre compte actuel (<strong className="text-slate-900">{currentUser.matricule}</strong>) possède le rôle <strong className="text-[#0B3D91]">{currentUser.role}</strong>. L&apos;accès à la gestion financière et à l&apos;extraction du rapport PDF des adresses MAC est réservé à la Trésorerie de la Division.
+              Votre compte actuel (<strong className="text-slate-900">{currentUser.matricule}</strong>) possède le rôle <strong className="text-[#0B3D91]">{currentUser.role}</strong>. L&apos;accès à la gestion financière, aux décaissements et à l&apos;audit de caisse est réservé à la Trésorerie, au Commissariat aux Comptes et à la Direction.
             </p>
             <button
               onClick={() => router.push('/espace-membre')}

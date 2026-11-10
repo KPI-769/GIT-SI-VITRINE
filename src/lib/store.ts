@@ -1,5 +1,5 @@
 export * from './types';
-import { User, Payment, Project, Course, Event, Broadcast, Penalty, AccessLog } from './types';
+import { User, Payment, Project, Course, Event, Broadcast, Penalty, AccessLog, Decaissement, AuditLogItem, COTISATION_AMOUNT_BUREAU, CURRENT_YEAR } from './types';
 import { generateOfficialUsers, generateBureauUsers } from './members-data';
 
 export const ADMIN_USER: User = {
@@ -19,7 +19,14 @@ export const ADMIN_USER: User = {
   isWifiAllowed: true,
   isLabAllowed: true,
   macAddresses: [],
-  cotisations: [],
+  cotisations: [9, 10, 11, 12, 1, 2, 3, 4, 5, 6].map((mois) => ({
+    id: `cot_usr_admin_${mois}`,
+    mois,
+    annee: CURRENT_YEAR,
+    montant: COTISATION_AMOUNT_BUREAU,
+    isPaid: true,
+    userId: 'usr_admin',
+  })),
   penalties: [],
   certifications: [],
   passwordResetRequested: false
@@ -208,10 +215,6 @@ export const INITIAL_BROADCASTS: Broadcast[] = [
 
 export const INITIAL_ACCESS_LOGS: AccessLog[] = [];
 
-export const DEFAULT_COTISATION_AMOUNT = 2000; // 2 000 FCFA
-export const CURRENT_MONTH = new Date().getMonth() + 1;
-export const CURRENT_YEAR = new Date().getFullYear();
-
 export function playSuccessTone() {
   if (typeof window === 'undefined') return;
   try {
@@ -250,4 +253,126 @@ export function playErrorTone() {
     osc.start();
     osc.stop(ctx.currentTime + 0.3);
   } catch {}
+}
+
+export const INITIAL_DECAISSEMENTS: Decaissement[] = [
+  {
+    id: 'dec_001',
+    memberId: 'usr_sjp_001',
+    memberName: 'NYABEYEU NYABEYEU L.',
+    memberMatricule: 'GIT-001',
+    amount: 15000,
+    motif: 'Achat de bobines PLA et buses pour l\'imprimante 3D du laboratoire SJP',
+    beneficiaireCategory: 'PROJET_LABO',
+    certifiedByCommissaireId: 'GIT-BUR-10',
+    certifiedByCommissaireName: 'KILEGEL Grâce (Commissaire aux Comptes)',
+    reference: 'DEC-2026-001',
+    timestamp: '2026-10-25T14:30:00.000Z',
+    scanVerified: true,
+  },
+  {
+    id: 'dec_002',
+    memberId: 'usr_sjp_007',
+    memberName: 'DIKWA KOLYANG YVAN BRIAN',
+    memberMatricule: 'GIT-007',
+    amount: 25000,
+    motif: 'Acquisition passerelle LoRaWAN et capteurs environnementaux R&D',
+    beneficiaireCategory: 'PROJET_LABO',
+    certifiedByCommissaireId: 'GIT-BUR-10',
+    certifiedByCommissaireName: 'KILEGEL Grâce (Commissaire aux Comptes)',
+    reference: 'DEC-2026-002',
+    timestamp: '2026-11-02T10:15:00.000Z',
+    scanVerified: true,
+  }
+];
+
+export const INITIAL_AUDIT_LOGS: AuditLogItem[] = [
+  {
+    id: 'audit_001',
+    action: 'COTISATION_ENCAISSEE',
+    actorId: 'usr_git_bur_04',
+    actorName: 'LEKEUFACK Anne',
+    actorRole: 'TREASURER',
+    targetId: 'usr_sjp_001',
+    targetName: 'NYABEYEU NYABEYEU L.',
+    targetMatricule: 'GIT-001',
+    amount: 1000,
+    details: 'Cotisation mensuelle encaissée pour Octobre 2026 (1 000 FCFA)',
+    timestamp: '2026-10-20T09:12:00.000Z'
+  },
+  {
+    id: 'audit_002',
+    action: 'PENALITE_ENREGISTREE',
+    actorId: 'usr_git_bur_05',
+    actorName: 'EDOUA LEOCADIE',
+    actorRole: 'CENSEUR',
+    targetId: 'usr_sjp_003',
+    targetName: 'HAGO KEMENI JUAN',
+    targetMatricule: 'GIT-003',
+    amount: 1000,
+    details: 'Pénalité pour non-port des équipements de sécurité au labo',
+    timestamp: '2026-10-22T11:45:00.000Z'
+  },
+  {
+    id: 'audit_003',
+    action: 'DECAISSEMENT_SCAN_CERTIFIE',
+    actorId: 'usr_git_bur_10',
+    actorName: 'KILEGEL Grâce',
+    actorRole: 'COMMISSAIRE_AUX_COMPTES',
+    targetId: 'usr_sjp_001',
+    targetName: 'NYABEYEU NYABEYEU L.',
+    targetMatricule: 'GIT-001',
+    amount: 15000,
+    details: 'Remise de fonds certifiée par scan du badge pour achat matériel 3D',
+    timestamp: '2026-10-25T14:30:00.000Z'
+  }
+];
+
+const DECAISSEMENTS_STORAGE_KEY = 'git_decaissements_v1';
+const AUDIT_LOGS_STORAGE_KEY = 'git_audit_logs_v1';
+
+export function loadDecaissements(): Decaissement[] {
+  if (typeof window === 'undefined') return INITIAL_DECAISSEMENTS;
+  try {
+    const stored = localStorage.getItem(DECAISSEMENTS_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return INITIAL_DECAISSEMENTS;
+}
+
+export function saveDecaissements(items: Decaissement[]) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(DECAISSEMENTS_STORAGE_KEY, JSON.stringify(items));
+}
+
+export function loadAuditLogs(): AuditLogItem[] {
+  if (typeof window === 'undefined') return INITIAL_AUDIT_LOGS;
+  try {
+    const stored = localStorage.getItem(AUDIT_LOGS_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return INITIAL_AUDIT_LOGS;
+}
+
+export function saveAuditLogs(logs: AuditLogItem[]) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(AUDIT_LOGS_STORAGE_KEY, JSON.stringify(logs));
+}
+
+export function logAdminAction(params: Omit<AuditLogItem, 'id' | 'timestamp'>) {
+  if (typeof window === 'undefined') return;
+  const currentLogs = loadAuditLogs();
+  const newItem: AuditLogItem = {
+    id: `audit_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    timestamp: new Date().toISOString(),
+    ...params,
+  };
+  const updated = [newItem, ...currentLogs];
+  saveAuditLogs(updated);
 }

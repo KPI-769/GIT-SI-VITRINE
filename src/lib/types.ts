@@ -7,7 +7,8 @@ export type Role =
   | 'ADMIN'
   | 'COMMUNICATION'
   | 'FORMATION'
-  | 'CONSEILLER';
+  | 'CONSEILLER'
+  | 'COMMISSAIRE_AUX_COMPTES';
 
 export const NIVEAUX = ['GI_1', 'GI_2', 'GI_3', 'GI_4', 'GI_5'] as const;
 export type Niveau = typeof NIVEAUX[number] | 'GI_Bureau';
@@ -189,7 +190,54 @@ export interface AccessLog {
 // Constantes de référence
 export const CURRENT_MONTH = 10;
 export const CURRENT_YEAR = 2026;
-export const DEFAULT_COTISATION_AMOUNT = 2000; // 2000 FCFA
+export const COTISATION_AMOUNT_MEMBER = 1000; // 1 000 FCFA pour les membres
+export const COTISATION_AMOUNT_BUREAU = 1500; // 1 500 FCFA pour les membres du bureau
+export const DEFAULT_COTISATION_AMOUNT = 1000; // Rétro-compatibilité
+
+export function getCotisationAmountForUser(user?: { role?: string; niveau?: string } | null): number {
+  if (!user) return COTISATION_AMOUNT_MEMBER;
+  const isBureau = user.role !== 'MEMBER' || user.niveau === 'GI_Bureau';
+  return isBureau ? COTISATION_AMOUNT_BUREAU : COTISATION_AMOUNT_MEMBER;
+}
+
+export interface Decaissement {
+  id: string;
+  memberId: string;
+  memberName: string;
+  memberMatricule: string;
+  amount: number;
+  motif: string;
+  beneficiaireCategory: 'MEMBRE' | 'FOURNISSEUR' | 'PROJET_LABO' | 'EVENEMENT';
+  certifiedByCommissaireId: string;
+  certifiedByCommissaireName: string;
+  reference: string;
+  timestamp: string;
+  scanVerified: boolean;
+}
+
+export type AuditActionType =
+  | 'COTISATION_ENCAISSEE'
+  | 'PENALITE_PAYEE'
+  | 'PENALITE_ENREGISTREE'
+  | 'DECAISSEMENT_SCAN_CERTIFIE'
+  | 'MOT_DE_PASSE_REINITIALISE'
+  | 'AUTORISATION_PERIPHERIQUE'
+  | 'ROLE_MODIFIE'
+  | 'ACCES_LABO_SCAN';
+
+export interface AuditLogItem {
+  id: string;
+  action: AuditActionType;
+  actorId: string;
+  actorName: string;
+  actorRole: string;
+  targetId?: string;
+  targetName?: string;
+  targetMatricule?: string;
+  amount?: number;
+  details: string;
+  timestamp: string;
+}
 
 export const MONTH_NAMES: string[] = [
   'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',

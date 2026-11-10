@@ -26,6 +26,8 @@ import {
   Bell,
   Search,
   ChevronRight,
+  Menu,
+  X as XIcon,
 } from 'lucide-react';
 
 /* ────────────────────────────── MODULE CONFIG ────────────────────────────── */
@@ -60,12 +62,14 @@ export default function AppHeader() {
   const pathname = usePathname();
   const [modulesOpen, setModulesOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
   const closeAll = useCallback(() => {
     setModulesOpen(false);
     setProfileOpen(false);
+    setMobileMenuOpen(false);
   }, []);
 
   // Close dropdowns on outside click
@@ -86,6 +90,16 @@ export default function AppHeader() {
   useEffect(() => {
     closeAll();
   }, [pathname, closeAll]);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileMenuOpen]);
 
   if (!currentUser) return null;
 
@@ -116,7 +130,7 @@ export default function AppHeader() {
                 <div className="w-9 h-9 rounded-xl overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all duration-200">
                   <Image
                     src="/logo.jpg"
-                    alt="Logo GIT"
+                    alt="Logo GIT-SJD"
                     width={36}
                     height={36}
                     className="object-contain"
@@ -126,7 +140,7 @@ export default function AppHeader() {
                 <div className="hidden sm:block">
                   <div className="flex items-center gap-1.5">
                     <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white">
-                      GIT
+                      GIT-SJD
                     </span>
                     <span className="px-1.5 py-px text-[9px] font-bold rounded-md bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-700/50">
                       PWA
@@ -240,7 +254,7 @@ export default function AppHeader() {
                 {/* Theme toggle */}
                 <ThemeToggle />
 
-                {/* Home link */}
+                {/* Home link (desktop) */}
                 <Link
                   href="/"
                   className="hidden sm:flex w-9 h-9 items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200"
@@ -249,8 +263,8 @@ export default function AppHeader() {
                   <Home className="w-4 h-4" />
                 </Link>
 
-                {/* Profile dropdown */}
-                <div className="relative" ref={profileRef}>
+                {/* Profile dropdown (desktop) */}
+                <div className="relative hidden lg:block" ref={profileRef}>
                   <button
                     type="button"
                     onClick={() => { setProfileOpen(!profileOpen); setModulesOpen(false); }}
@@ -260,7 +274,7 @@ export default function AppHeader() {
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-sm">
                       {initials}
                     </div>
-                    <div className="hidden md:block text-left max-w-[120px]">
+                    <div className="text-left max-w-[120px]">
                       <p className="text-xs font-semibold text-slate-900 dark:text-white truncate leading-tight">
                         {currentUser.prenom}
                       </p>
@@ -268,7 +282,7 @@ export default function AppHeader() {
                         {roleInfo?.label || currentUser.role}
                       </p>
                     </div>
-                    <ChevronDown className={`w-3 h-3 text-slate-400 hidden md:block transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`} />
                   </button>
 
                   {/* Profile dropdown panel */}
@@ -327,12 +341,175 @@ export default function AppHeader() {
                     </div>
                   )}
                 </div>
+
+                {/* ──── HAMBURGER (mobile + tablet, < lg) ──── */}
+                <button
+                  type="button"
+                  aria-label={mobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+                  aria-expanded={mobileMenuOpen}
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="lg:hidden flex w-9 h-9 items-center justify-center rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200"
+                >
+                  {mobileMenuOpen ? <XIcon className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                </button>
               </div>
 
             </div>
           </div>
         </div>
       </header>
+
+      {/* ═══ MOBILE DRAWER ═══ */}
+      {/* Backdrop */}
+      {mobileMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Drawer panel */}
+      <aside
+        className={`lg:hidden fixed top-0 left-0 h-full z-50 w-[300px] max-w-[85vw] bg-white dark:bg-[#0B0F19] border-r border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col transition-transform duration-300 ease-out ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        aria-label="Menu de navigation"
+      >
+        {/* Drawer header */}
+        <div className="flex items-center justify-between px-4 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+              <Image src="/logo.jpg" alt="GIT-SJD" width={32} height={32} className="object-contain" />
+            </div>
+            <div>
+              <span className="font-extrabold text-sm text-slate-900 dark:text-white">GIT-SJD</span>
+              <p className="text-[9px] text-slate-500 leading-tight">Division Génie Infotronique</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setMobileMenuOpen(false)}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            aria-label="Fermer"
+          >
+            <XIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* User profile strip */}
+        <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
+              {initials}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                {currentUser.prenom} {currentUser.nom}
+              </p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${roleInfo?.badgeClass || 'bg-slate-100 text-slate-700 border-slate-200'}`}>
+                  {roleInfo?.label || currentUser.role}
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">{currentUser.matricule}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Scrollable nav content */}
+        <nav className="flex-1 overflow-y-auto py-3 space-y-1 px-2">
+          {/* Primary links */}
+          <p className="px-3 pt-1 pb-1.5 text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Navigation</p>
+          {NAV_LINKS.map(({ href, label }) => {
+            const isActive = pathname === href || pathname.startsWith(href + '/');
+            return (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                  isActive
+                    ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                }`}
+              >
+                {label}
+              </Link>
+            );
+          })}
+
+          {/* Modules section */}
+          {hasExecutiveRole && (
+            <>
+              <div className="h-px bg-slate-100 dark:bg-slate-800 mx-2 my-2" />
+              <p className="px-3 pb-1.5 text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                Modules Admin
+              </p>
+              {MODULES.map(({ href, label, sub, icon: Icon, color }) => {
+                const c = COLOR_MAP[color];
+                const isActive = pathname === href;
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group ${
+                      isActive
+                        ? `${c.bg} ${c.bgDark} ${c.text} ${c.textDark}`
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${c.bg} ${c.border} border`}>
+                      <Icon className={`w-4 h-4 ${c.text}`} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] font-semibold leading-tight truncate">{label}</p>
+                      <p className="text-[10px] text-slate-400 leading-tight truncate">{sub}</p>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+                  </Link>
+                );
+              })}
+
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-purple-700 dark:text-purple-300 bg-purple-50/60 dark:bg-purple-950/30 hover:bg-purple-100/80 transition group"
+                >
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-purple-100 border border-purple-200">
+                    <ShieldAlert className="w-4 h-4 text-purple-700" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-semibold leading-tight">Bureau Admin Central</p>
+                    <p className="text-[11px] text-purple-500 leading-tight">Membres, rôles & mots de passe</p>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-purple-300 shrink-0" />
+                </Link>
+              )}
+            </>
+          )}
+        </nav>
+
+        {/* Footer actions */}
+        <div className="shrink-0 border-t border-slate-100 dark:border-slate-800 p-3 space-y-1">
+          <Link
+            href="/"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition text-sm font-medium"
+          >
+            <Home className="w-4 h-4 text-slate-400" />
+            Site Vitrine
+          </Link>
+          <button
+            onClick={() => { setMobileMenuOpen(false); logout(); }}
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition text-sm font-medium cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" />
+            Se déconnecter
+          </button>
+        </div>
+      </aside>
     </>
   );
 }

@@ -1,12 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; 
 import { 
   User, 
   MONTH_NAMES, 
   CURRENT_MONTH, 
   CURRENT_YEAR,
-  Project
+  Project,
+  Course,
+  Event,
+  Broadcast,
 } from '@/lib/types';
 import DynamicQrCode from './DynamicQrCode';
 import { 
@@ -32,10 +35,16 @@ import {
   Lock,
   Eye,
   EyeOff,
-  Shield
+  Shield,
+  UserPlus,
+  UserCheck,
+  X,
+  Radio,
+  Clock,
+  MapPin,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { INITIAL_PROJECTS } from '@/lib/store';
+import { INITIAL_PROJECTS, INITIAL_COURSES, INITIAL_EVENTS, INITIAL_BROADCASTS } from '@/lib/store';
 
 interface MemberViewProps {
   user: User;
@@ -49,6 +58,17 @@ export default function MemberView({ user, onUpdateMacs }: MemberViewProps) {
 
   // Projets R&D synchronisés
   const [allProjects, setAllProjects] = useState<Project[]>(INITIAL_PROJECTS);
+  // Formations disponibles
+  const [allCourses, setAllCourses] = useState<Course[]>(INITIAL_COURSES);
+  // Événements disponibles
+  const [allEvents, setAllEvents] = useState<Event[]>(INITIAL_EVENTS);
+  // Émissions disponibles
+  const [allBroadcasts, setAllBroadcasts] = useState<Broadcast[]>(INITIAL_BROADCASTS);
+  // Inscriptions locales
+  const [courseEnrollments, setCourseEnrollments] = useState<Record<string, string[]>>({});
+  const [eventRegistrations, setEventRegistrations] = useState<Record<string, string[]>>({});
+  const [broadcastRegistrations, setBroadcastRegistrations] = useState<Record<string, string[]>>({});
+  const [enrollToast, setEnrollToast] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -58,7 +78,101 @@ export default function MemberView({ user, onUpdateMacs }: MemberViewProps) {
         if (Array.isArray(parsed) && parsed.length > 0) setAllProjects(parsed);
       }
     } catch {}
+
+    try {
+      const stored = localStorage.getItem('git_courses_v2');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) setAllCourses(parsed);
+      }
+    } catch {}
+
+    try {
+      const stored = localStorage.getItem('git_events_v2');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) setAllEvents(parsed);
+      }
+    } catch {}
+
+    try {
+      const stored = localStorage.getItem('git_broadcasts_v1');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) setAllBroadcasts(parsed);
+      }
+    } catch {}
+
+    // Charger les inscriptions
+    try {
+      const ce = localStorage.getItem('git_course_enrollments_v1');
+      if (ce) setCourseEnrollments(JSON.parse(ce));
+    } catch {}
+    try {
+      const er = localStorage.getItem('git_event_registrations_v1');
+      if (er) setEventRegistrations(JSON.parse(er));
+    } catch {}
+    try {
+      const br = localStorage.getItem('git_broadcast_registrations_v1');
+      if (br) setBroadcastRegistrations(JSON.parse(br));
+    } catch {}
   }, []);
+
+  const showEnrollToast = (msg: string) => {
+    setEnrollToast(msg);
+    setTimeout(() => setEnrollToast(null), 3000);
+  };
+
+  const isEnrolledInCourse = (courseId: string) =>
+    (courseEnrollments[courseId] || []).includes(user.id);
+
+  const isRegisteredToEvent = (eventId: string) =>
+    (eventRegistrations[eventId] || []).includes(user.id);
+
+  const isRegisteredToBroadcast = (bcId: string) =>
+    (broadcastRegistrations[bcId] || []).includes(user.id);
+
+  const toggleCourseEnrollment = (courseId: string, courseTitle: string) => {
+    const current = courseEnrollments[courseId] || [];
+    let updated: Record<string, string[]>;
+    if (current.includes(user.id)) {
+      updated = { ...courseEnrollments, [courseId]: current.filter(id => id !== user.id) };
+      showEnrollToast(`Désinscrit de « ${courseTitle} »`);
+    } else {
+      updated = { ...courseEnrollments, [courseId]: [...current, user.id] };
+      showEnrollToast(`Inscrit à « ${courseTitle} » ! Le responsable sera notifié.`);
+    }
+    setCourseEnrollments(updated);
+    localStorage.setItem('git_course_enrollments_v1', JSON.stringify(updated));
+  };
+
+  const toggleEventRegistration = (eventId: string, eventTitle: string) => {
+    const current = eventRegistrations[eventId] || [];
+    let updated: Record<string, string[]>;
+    if (current.includes(user.id)) {
+      updated = { ...eventRegistrations, [eventId]: current.filter(id => id !== user.id) };
+      showEnrollToast(`Présence annulée pour « ${eventTitle} »`);
+    } else {
+      updated = { ...eventRegistrations, [eventId]: [...current, user.id] };
+      showEnrollToast(`Présence confirmée pour « ${eventTitle} » !`);
+    }
+    setEventRegistrations(updated);
+    localStorage.setItem('git_event_registrations_v1', JSON.stringify(updated));
+  };
+
+  const toggleBroadcastRegistration = (bcId: string, bcTitle: string) => {
+    const current = broadcastRegistrations[bcId] || [];
+    let updated: Record<string, string[]>;
+    if (current.includes(user.id)) {
+      updated = { ...broadcastRegistrations, [bcId]: current.filter(id => id !== user.id) };
+      showEnrollToast(`Demande retirée pour « ${bcTitle} »`);
+    } else {
+      updated = { ...broadcastRegistrations, [bcId]: [...current, user.id] };
+      showEnrollToast(`Demande envoyée pour participer à « ${bcTitle} » !`);
+    }
+    setBroadcastRegistrations(updated);
+    localStorage.setItem('git_broadcast_registrations_v1', JSON.stringify(updated));
+  };
   
   // États pour l'ajout d'adresse MAC
   const [newMacAddress, setNewMacAddress] = useState('');
@@ -162,6 +276,13 @@ export default function MemberView({ user, onUpdateMacs }: MemberViewProps) {
 
   return (
     <div className="space-y-6">
+      {/* Toast d'inscription */}
+      {enrollToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 bg-slate-900 text-white rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700 text-xs font-bold animate-fadeIn">
+          <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{enrollToast}</span>
+        </div>
+      )}
       {/* Sélecteur d'onglets mobile-friendly */}
       <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-xs overflow-x-auto gap-1">
         <button
@@ -592,6 +713,126 @@ export default function MemberView({ user, onUpdateMacs }: MemberViewProps) {
               </div>
             )}
           </div>
+
+          {/* S'inscrire aux formations futures */}
+          {allCourses.filter(c => c.status === 'PLANNED').length > 0 && (
+            <div className="card p-6 space-y-4">
+              <div className="pb-3 border-b border-slate-100">
+                <span className="section-label">Pôle Formation</span>
+                <h3 className="text-lg font-bold text-slate-900 font-display">S&apos;inscrire aux Formations Planifiées</h3>
+                <p className="text-xs text-slate-500">Réservez votre place dans les prochaines formations GIT-SJD.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {allCourses.filter(c => c.status === 'PLANNED').map(course => {
+                  const enrolled = isEnrolledInCourse(course.id);
+                  return (
+                    <div key={course.id} className={`p-4 rounded-2xl border flex flex-col gap-3 transition ${enrolled ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 border-slate-200'}`}>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-300">Planifié</span>
+                          <span className="text-[10px] font-mono text-slate-500">{course.level}</span>
+                        </div>
+                        <h4 className="text-sm font-bold text-slate-900 leading-snug">{course.title}</h4>
+                        {course.startDate && (
+                          <span className="text-[11px] text-slate-500 flex items-center gap-1 mt-1">
+                            <Clock className="w-3 h-3" />
+                            Début : {new Date(course.startDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => toggleCourseEnrollment(course.id, course.title)}
+                        className={`w-full py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center justify-center gap-2 ${
+                          enrolled
+                            ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                            : 'bg-[#0B3D91] hover:bg-blue-800 text-white'
+                        }`}
+                      >
+                        {enrolled ? <><UserCheck className="w-4 h-4" /> Inscrit — Annuler</> : <><UserPlus className="w-4 h-4" /> S&apos;inscrire</>}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* S'inscrire aux événements futurs */}
+          {allEvents.filter(e => e.status === 'UPCOMING').length > 0 && (
+            <div className="card p-6 space-y-4">
+              <div className="pb-3 border-b border-slate-100">
+                <span className="section-label">Événements GIT-SJD</span>
+                <h3 className="text-lg font-bold text-slate-900 font-display">Signaler ma Présence à un Événement</h3>
+                <p className="text-xs text-slate-500">Confirmez votre participation aux prochains événements.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {allEvents.filter(e => e.status === 'UPCOMING').map(event => {
+                  const registered = isRegisteredToEvent(event.id);
+                  return (
+                    <div key={event.id} className={`p-4 rounded-2xl border flex flex-col gap-3 transition ${registered ? 'bg-indigo-50 border-indigo-300' : 'bg-slate-50 border-slate-200'}`}>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900 leading-snug">{event.title}</h4>
+                        <div className="flex flex-wrap gap-2 mt-1.5 text-[11px] text-slate-500">
+                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(event.startDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}</span>
+                          {event.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{event.location}</span>}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => toggleEventRegistration(event.id, event.title)}
+                        className={`w-full py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center justify-center gap-2 ${
+                          registered
+                            ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                            : 'bg-slate-800 hover:bg-slate-900 text-white'
+                        }`}
+                      >
+                        {registered ? <><UserCheck className="w-4 h-4" /> Présence confirmée — Annuler</> : <><Calendar className="w-4 h-4" /> Confirmer ma présence</>}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* S'inscrire aux émissions */}
+          {allBroadcasts.filter(b => b.status === 'UPCOMING').length > 0 && (
+            <div className="card p-6 space-y-4">
+              <div className="pb-3 border-b border-slate-100">
+                <span className="section-label">Émissions GIT-SJD</span>
+                <h3 className="text-lg font-bold text-slate-900 font-display">Participer à une Émission</h3>
+                <p className="text-xs text-slate-500">Faites une demande pour participer en direct aux émissions de la division.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {allBroadcasts.filter(b => b.status === 'UPCOMING').map(bc => {
+                  const requested = isRegisteredToBroadcast(bc.id);
+                  return (
+                    <div key={bc.id} className={`p-4 rounded-2xl border flex flex-col gap-3 transition ${requested ? 'bg-rose-50 border-rose-300' : 'bg-slate-50 border-slate-200'}`}>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200">{bc.platform}</span>
+                        </div>
+                        <h4 className="text-sm font-bold text-slate-900 leading-snug">{bc.title}</h4>
+                        <span className="text-[11px] text-slate-500 flex items-center gap-1 mt-1">
+                          <Clock className="w-3 h-3" />
+                          {new Date(bc.scheduledAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => toggleBroadcastRegistration(bc.id, bc.title)}
+                        className={`w-full py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center justify-center gap-2 ${
+                          requested
+                            ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                            : 'bg-slate-800 hover:bg-slate-900 text-white'
+                        }`}
+                      >
+                        {requested ? <><UserCheck className="w-4 h-4" /> Demande envoyée — Retirer</> : <><Radio className="w-4 h-4" /> Demander à participer</>}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

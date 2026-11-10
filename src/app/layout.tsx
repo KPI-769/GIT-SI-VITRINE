@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
@@ -7,14 +8,14 @@ import PwaManager from "@/components/pwa/PwaManager";
 import MobileBottomBar from "@/components/public/MobileBottomBar";
 
 export const metadata: Metadata = {
-  title: "Division Génie Infotronique (GIT) | Plateforme Officielle",
+  title: "GIT-SJD | Division Génie Infotronique — Plateforme Officielle",
   description:
-    "Plateforme officielle PWA de la Division Génie Infotronique (GIT) : cotisations, contrôle d'accès QR, filtrage Wi-Fi et suivi du laboratoire.",
+    "Plateforme officielle PWA de la Division Génie Infotronique (GIT-SJD) : cotisations, contrôle d'accès QR, filtrage Wi-Fi et suivi du laboratoire.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "GIT SJP",
+    title: "GIT-SJD",
   },
   icons: {
     icon: [
@@ -76,7 +77,9 @@ export default function RootLayout({
           <AuthProvider>
             <PwaManager />
             <SmoothScrollProvider>{children}</SmoothScrollProvider>
-            <MobileBottomBar />
+            <Suspense fallback={null}>
+              <MobileBottomBar />
+            </Suspense>
           </AuthProvider>
         </ThemeProvider>
       </body>

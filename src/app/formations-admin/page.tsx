@@ -26,7 +26,9 @@ import {
   Star,
   Users,
   Code2,
-  Sparkles
+  Sparkles,
+  ChevronDown,
+  UserPlus
 } from 'lucide-react';
 
 const STATUS_META: Record<CourseStatus, { label: string; badge: string }> = {
@@ -105,6 +107,8 @@ const EMPTY_PROJECT: Omit<Project, 'id'> = {
   description: '',
   category: 'Systèmes Embarqués',
   githubUrl: '',
+  linkedinUrl: '',
+  tiktokUrl: '',
   demoUrl: '',
   coverImage: '',
   featured: false,
@@ -121,6 +125,10 @@ export default function FormationsAdminPage() {
   const [certifications, setCertifications] = useState<Certification[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeTab, setActiveTab] = useState<'courses' | 'projects' | 'certifs'>('courses');
+  const [courseEnrollments, setCourseEnrollments] = useState<Record<string, string[]>>({});
+  const [courseStatusFilter, setCourseStatusFilter] = useState<'ALL' | CourseStatus>('ALL');
+  const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null);
+  const [certifFilterCourse, setCertifFilterCourse] = useState<string>('ALL');
 
   // Course modal state
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -148,6 +156,10 @@ export default function FormationsAdminPage() {
     setCourses(loadCourses());
     setCertifications(loadCertifications());
     setProjects(loadProjects());
+    try {
+      const ce = localStorage.getItem('git_course_enrollments_v1');
+      if (ce) setCourseEnrollments(JSON.parse(ce));
+    } catch {}
 
     fetch('/api/courses')
       .then((res) => res.json())
@@ -267,6 +279,27 @@ export default function FormationsAdminPage() {
       .catch(err => console.error('Erreur sync DELETE /api/courses:', err));
   };
 
+  const handleStatusChangeCourse = (courseId: string, status: CourseStatus) => {
+    const updated = courses.map(c => c.id === courseId ? { ...c, status } : c);
+    setCourses(updated);
+    saveCourses(updated);
+    showToast('Statut de la formation mis à jour.');
+    fetch(`/api/courses/${courseId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    }).catch(err => console.error('Erreur sync PATCH /api/courses:', err));
+  };
+
+  const removeEnrollment = (courseId: string, userId: string) => {
+    const current = courseEnrollments[courseId] || [];
+    const updatedList = current.filter(id => id !== userId);
+    const updatedAll = { ...courseEnrollments, [courseId]: updatedList };
+    setCourseEnrollments(updatedAll);
+    localStorage.setItem('git_course_enrollments_v1', JSON.stringify(updatedAll));
+    showToast('Inscription retirée.');
+  };
+
   // Projets CRUD
   const openNewProject = () => {
     setEditingProject(null);
@@ -283,6 +316,8 @@ export default function FormationsAdminPage() {
       description: p.description,
       category: p.category,
       githubUrl: p.githubUrl || '',
+      linkedinUrl: p.linkedinUrl || '',
+      tiktokUrl: p.tiktokUrl || '',
       demoUrl: p.demoUrl || '',
       coverImage: p.coverImage || '',
       featured: Boolean(p.featured),
@@ -555,12 +590,70 @@ export default function FormationsAdminPage() {
         {/* ════════════ ONGLET 1: FORMATIONS ════════════ */}
         {activeTab === 'courses' && (
           <div className="card p-6 bg-white border border-slate-300 shadow-sm space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <h2 className="text-lg font-bold text-slate-900 font-display flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-amber-600" />
-                <span>Modules Académiques &amp; Ateliers Pratiques</span>
-              </h2>
-              <span className="text-xs text-slate-500 font-mono">{courses.length} formation(s) enregistrée(s)</span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-100">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 font-display flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-amber-600" />
+                  <span>Modules Académiques &amp; Ateliers Pratiques</span>
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Gérez les formations en cours, futures (planifiées) et passées, suivez les inscrits et certifiez les étudiants.
+                </p>
+              </div>
+              <span className="text-xs text-slate-500 font-mono shrink-0">{courses.length} formation(s) enregistrée(s)</span>
+            </div>
+
+            {/* Filtres de statut de formation */}
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button
+                onClick={() => setCourseStatusFilter('ALL')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  courseStatusFilter === 'ALL'
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Toutes ({courses.length})
+              </button>
+              <button
+                onClick={() => setCourseStatusFilter('IN_PROGRESS')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                  courseStatusFilter === 'IN_PROGRESS'
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
+                }`}
+              >
+                <span>En cours</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20">
+                  {courses.filter(c => c.status === 'IN_PROGRESS').length}
+                </span>
+              </button>
+              <button
+                onClick={() => setCourseStatusFilter('PLANNED')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                  courseStatusFilter === 'PLANNED'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'bg-blue-50 text-blue-800 hover:bg-blue-100 border border-blue-200'
+                }`}
+              >
+                <span>Futures / Planifiées</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20">
+                  {courses.filter(c => c.status === 'PLANNED').length}
+                </span>
+              </button>
+              <button
+                onClick={() => setCourseStatusFilter('COMPLETED')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                  courseStatusFilter === 'COMPLETED'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
+                }`}
+              >
+                <span>Passées / Terminées</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20">
+                  {courses.filter(c => c.status === 'COMPLETED').length}
+                </span>
+              </button>
             </div>
 
             {courses.length === 0 ? (
@@ -576,81 +669,150 @@ export default function FormationsAdminPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {courses.map(course => {
-                  const meta = STATUS_META[course.status];
-                  const certCount = certifsByCourseName(course.title).length;
-                  return (
-                    <div key={course.id} className="p-5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-amber-300 transition space-y-3 flex flex-col justify-between">
-                      <div className="space-y-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${meta.badge}`}>
-                            {meta.label}
-                          </span>
-                          <span className="text-[10px] font-mono text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
-                            {course.level || 'Tous Niveaux'}
-                          </span>
-                        </div>
-                        <h3 className="font-bold text-slate-900 text-sm leading-snug">{course.title}</h3>
-                        <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">{course.description}</p>
-                      </div>
+                {courses
+                  .filter(c => courseStatusFilter === 'ALL' || c.status === courseStatusFilter)
+                  .map(course => {
+                    const meta = STATUS_META[course.status];
+                    const certCount = certifsByCourseName(course.title).length;
+                    const enrolledUserIds = courseEnrollments[course.id] || [];
+                    const isExpanded = expandedCourseId === course.id;
 
-                      <div className="pt-2 border-t border-slate-200 space-y-2 text-xs text-slate-600">
-                        {course.instructor && (
-                          <div className="flex items-center gap-1.5 text-[11px]">
-                            <span className="text-slate-400 font-bold">Intervenant :</span>
-                            <span className="font-semibold text-slate-800">{course.instructor}</span>
+                    return (
+                      <div key={course.id} className="p-5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-amber-300 transition space-y-3 flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${meta.badge}`}>
+                              {meta.label}
+                            </span>
+                            <span className="text-[10px] font-mono text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
+                              {course.level || 'Tous Niveaux'}
+                            </span>
                           </div>
-                        )}
-                        <div className="flex items-center justify-between text-[11px] text-slate-500">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5" />
-                            {course.hoursCount ? `${course.hoursCount}h de cours` : '20h'}
-                          </span>
-                          <span className="text-amber-700 font-bold flex items-center gap-1">
-                            <Award className="w-3.5 h-3.5" />
-                            {certCount} certifié(s)
-                          </span>
+                          <h3 className="font-bold text-slate-900 text-sm leading-snug">{course.title}</h3>
+                          <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">{course.description}</p>
                         </div>
 
-                        <div className="flex gap-1.5 pt-2">
-                          <button
-                            onClick={() => openDeliverModal(course)}
-                            className="flex-1 py-1.5 px-2 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-xs font-bold border border-amber-200 transition cursor-pointer flex items-center justify-center gap-1"
-                          >
-                            <Award className="w-3.5 h-3.5 text-amber-600" />
-                            <span>Certifier</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              setEditTarget(course);
-                              setForm({
-                                title: course.title,
-                                description: course.description,
-                                status: course.status,
-                                instructor: course.instructor || '',
-                                hoursCount: course.hoursCount || 20,
-                                startDate: course.startDate ? course.startDate.slice(0, 10) : '',
-                                level: course.level || 'Tous Niveaux'
-                              });
-                              setIsAddOpen(true);
-                            }}
-                            className="p-1.5 bg-white hover:bg-slate-100 text-slate-600 rounded-lg border border-slate-200 transition cursor-pointer"
-                            title="Modifier"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteCourse(course.id, course.title)}
-                            className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg border border-rose-200 transition cursor-pointer"
-                            title="Supprimer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                        <div className="pt-2 border-t border-slate-200 space-y-2 text-xs text-slate-600">
+                          {course.instructor && (
+                            <div className="flex items-center gap-1.5 text-[11px]">
+                              <span className="text-slate-400 font-bold">Intervenant :</span>
+                              <span className="font-semibold text-slate-800">{course.instructor}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between text-[11px] text-slate-500">
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5" />
+                              {course.hoursCount ? `${course.hoursCount}h de cours` : '20h'}
+                            </span>
+                            <span className="text-amber-700 font-bold flex items-center gap-1">
+                              <Award className="w-3.5 h-3.5" />
+                              {certCount} certifié(s)
+                            </span>
+                          </div>
+
+                          {/* Inscrits PWA / Espace Membre */}
+                          <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100">
+                            <span className="flex items-center gap-1 text-slate-600 font-semibold">
+                              <Users className="w-3.5 h-3.5 text-blue-600" />
+                              {enrolledUserIds.length} membre{enrolledUserIds.length !== 1 ? 's' : ''} inscrit{enrolledUserIds.length !== 1 ? 's' : ''}
+                            </span>
+                            {enrolledUserIds.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setExpandedCourseId(isExpanded ? null : course.id)}
+                                className="text-[10px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-0.5 cursor-pointer"
+                              >
+                                <span>{isExpanded ? 'Masquer' : 'Voir liste'}</span>
+                                <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Liste déroulante des inscrits */}
+                          {isExpanded && enrolledUserIds.length > 0 && (
+                            <div className="p-2.5 rounded-xl bg-white border border-blue-200 space-y-1.5 max-h-36 overflow-y-auto">
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-blue-800">
+                                Inscrits à cette formation :
+                              </p>
+                              {enrolledUserIds.map(uid => {
+                                const m = allUsers.find(u => u.id === uid);
+                                return (
+                                  <div key={uid} className="flex items-center justify-between text-[11px] p-1 bg-slate-50 rounded-lg">
+                                    <span className="font-medium text-slate-800">
+                                      {m ? `${m.prenom} ${m.nom}` : uid}
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                      {m && <span className="text-[9px] font-mono text-slate-400">{m.matricule}</span>}
+                                      <button
+                                        type="button"
+                                        onClick={() => removeEnrollment(course.id, uid)}
+                                        className="text-slate-400 hover:text-rose-600 p-0.5"
+                                        title="Désinscrire"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Quick change status & actions */}
+                          <div className="pt-2 flex flex-col gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] font-bold text-slate-400">Statut :</span>
+                              <select
+                                value={course.status}
+                                onChange={e => handleStatusChangeCourse(course.id, e.target.value as CourseStatus)}
+                                className="flex-1 bg-white border border-slate-200 text-slate-800 text-[11px] font-semibold rounded-lg px-2 py-1 cursor-pointer focus:outline-none"
+                              >
+                                <option value="PLANNED">Planifié (Futur)</option>
+                                <option value="IN_PROGRESS">En cours</option>
+                                <option value="COMPLETED">Terminé (Passé)</option>
+                              </select>
+                            </div>
+
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={() => openDeliverModal(course)}
+                                className="flex-1 py-1.5 px-2 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-xs font-bold border border-amber-200 transition cursor-pointer flex items-center justify-center gap-1"
+                              >
+                                <Award className="w-3.5 h-3.5 text-amber-600" />
+                                <span>Certifier</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setEditTarget(course);
+                                  setForm({
+                                    title: course.title,
+                                    description: course.description,
+                                    status: course.status,
+                                    instructor: course.instructor || '',
+                                    hoursCount: course.hoursCount || 20,
+                                    startDate: course.startDate ? course.startDate.slice(0, 10) : '',
+                                    level: course.level || 'Tous Niveaux'
+                                  });
+                                  setIsAddOpen(true);
+                                }}
+                                className="p-1.5 bg-white hover:bg-slate-100 text-slate-600 rounded-lg border border-slate-200 transition cursor-pointer"
+                                title="Modifier"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteCourse(course.id, course.title)}
+                                className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg border border-rose-200 transition cursor-pointer"
+                                title="Supprimer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             )}
           </div>
@@ -759,7 +921,7 @@ export default function FormationsAdminPage() {
                       </div>
 
                       <div className="flex items-center justify-between gap-2 pt-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           {project.githubUrl && (
                             <a
                               href={project.githubUrl}
@@ -770,6 +932,30 @@ export default function FormationsAdminPage() {
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
                               <span className="text-[10px] font-mono">GitHub</span>
+                            </a>
+                          )}
+                          {(project as any).linkedinUrl && (
+                            <a
+                              href={(project as any).linkedinUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 bg-white text-blue-700 hover:text-blue-900 rounded-lg border border-blue-200 text-xs flex items-center gap-1 transition"
+                              title="Voir sur LinkedIn"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              <span className="text-[10px] font-mono">LinkedIn</span>
+                            </a>
+                          )}
+                          {(project as any).tiktokUrl && (
+                            <a
+                              href={(project as any).tiktokUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 bg-white text-pink-700 hover:text-pink-900 rounded-lg border border-pink-200 text-xs flex items-center gap-1 transition"
+                              title="Voir sur TikTok"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              <span className="text-[10px] font-mono">TikTok</span>
                             </a>
                           )}
                           {project.demoUrl && (
@@ -814,23 +1000,46 @@ export default function FormationsAdminPage() {
         {/* ════════════ ONGLET 3: CERTIFICATIONS ════════════ */}
         {activeTab === 'certifs' && (
           <div className="card p-6 bg-white border border-slate-300 shadow-sm space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <h2 className="text-lg font-bold text-slate-900 font-display flex items-center gap-2">
-                <Award className="w-5 h-5 text-emerald-600" />
-                <span>Certifications Officielles Délivrées</span>
-              </h2>
-              <span className="text-xs text-slate-500 font-mono">{certifications.length} certificat(s)</span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-100">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 font-display flex items-center gap-2">
+                  <Award className="w-5 h-5 text-emerald-600" />
+                  <span>Certifications Officielles Délivrées</span>
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Consultez la liste des étudiants certifiés par atelier et révoquez les certificats si nécessaire.
+                </p>
+              </div>
+
+              {/* Filtre par formation */}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold text-slate-500">Filtrer :</span>
+                <select
+                  value={certifFilterCourse}
+                  onChange={e => setCertifFilterCourse(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold rounded-xl px-3 py-1.5 cursor-pointer focus:outline-none"
+                >
+                  <option value="ALL">Toutes les formations ({certifications.length})</option>
+                  {courses.map(c => (
+                    <option key={c.id} value={c.title}>
+                      {c.title} ({certifsByCourseName(c.title).length})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            {certifications.length === 0 ? (
+            {certifications.filter(c => certifFilterCourse === 'ALL' || c.courseTitle === certifFilterCourse).length === 0 ? (
               <div className="py-12 text-center text-xs text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                 <Award className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                <p className="font-semibold text-slate-700">Aucune certification délivrée pour le moment.</p>
+                <p className="font-semibold text-slate-700">Aucune certification trouvée.</p>
                 <p className="mt-1">Rendez-vous dans l&apos;onglet Formations pour certifier des membres étudiants.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {certifications.map(c => {
+                {certifications
+                  .filter(c => certifFilterCourse === 'ALL' || c.courseTitle === certifFilterCourse)
+                  .map(c => {
                   const member = allUsers.find(u => u.id === c.userId);
                   const memberName = member ? `${member.prenom} ${member.nom}` : c.userId;
                   const matricule = member?.matricule || 'N/A';
@@ -1071,6 +1280,30 @@ export default function FormationsAdminPage() {
                     placeholder="https://..."
                     value={projectForm.demoUrl || ''}
                     onChange={e => setProjectForm(p => ({ ...p, demoUrl: e.target.value }))}
+                    className="input-nasa text-xs text-slate-900"
+                  />
+                </div>
+              </div>
+
+              {/* Liens de suivi social */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-1 uppercase tracking-wider">Suivi LinkedIn</label>
+                  <input
+                    type="url"
+                    placeholder="https://linkedin.com/..."
+                    value={(projectForm as any).linkedinUrl || ''}
+                    onChange={e => setProjectForm(p => ({ ...p, linkedinUrl: e.target.value }))}
+                    className="input-nasa text-xs text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-1 uppercase tracking-wider">Suivi TikTok</label>
+                  <input
+                    type="url"
+                    placeholder="https://tiktok.com/@..."
+                    value={(projectForm as any).tiktokUrl || ''}
+                    onChange={e => setProjectForm(p => ({ ...p, tiktokUrl: e.target.value }))}
                     className="input-nasa text-xs text-slate-900"
                   />
                 </div>

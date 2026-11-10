@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Download, X, WifiOff, CheckCircle2, Smartphone, ShieldCheck } from 'lucide-react';
+import PermissionsModal from '@/components/PermissionsModal';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -14,6 +15,7 @@ export default function PwaManager() {
   const [isOffline, setIsOffline] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [justInstalled, setJustInstalled] = useState(false);
+  const [showPermissionsModal, setShowPermissionsModal] = useState(false);
 
   useEffect(() => {
     // 1. Enregistrement du Service Worker PWA
@@ -22,7 +24,6 @@ export default function PwaManager() {
         navigator.serviceWorker
           .register('/sw.js')
           .then((reg) => {
-            // Vérification périodique des mises à jour du cache
             reg.addEventListener('updatefound', () => {
               const newWorker = reg.installing;
               if (newWorker) {
@@ -52,7 +53,6 @@ export default function PwaManager() {
       const promptEvent = e as BeforeInstallPromptEvent;
       setDeferredPrompt(promptEvent);
 
-      // Vérifier si l'utilisateur a fermé la bannière récemment (7 jours de tranquillité)
       const dismissedUntil = localStorage.getItem('git_pwa_dismissed_until');
       const now = Date.now();
       if (!dismissedUntil || now > parseInt(dismissedUntil, 10)) {
@@ -80,6 +80,21 @@ export default function PwaManager() {
 
     updateOnlineStatus();
 
+    // 5. Affichage proactif de la modal des permissions (si jamais vue ou refusée)
+    const permsSeen = localStorage.getItem('git_permissions_seen');
+    if (!permsSeen) {
+      const timer = setTimeout(() => {
+        setShowPermissionsModal(true);
+      }, 2500);
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        window.removeEventListener('appinstalled', handleAppInstalled);
+        window.removeEventListener('online', updateOnlineStatus);
+        window.removeEventListener('offline', updateOnlineStatus);
+      };
+    }
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
@@ -104,13 +119,25 @@ export default function PwaManager() {
 
   const handleDismiss = () => {
     setShowBanner(false);
-    // Masquer pour 7 jours
     const in7Days = Date.now() + 7 * 24 * 60 * 60 * 1000;
     localStorage.setItem('git_pwa_dismissed_until', in7Days.toString());
   };
 
+  const handleClosePermissions = () => {
+    setShowPermissionsModal(false);
+    // Marquer comme vu pour ne plus afficher automatiquement
+    localStorage.setItem('git_permissions_seen', 'true');
+  };
+
   return (
     <>
+      {/* ─── Modal Permissions proactive ─── */}
+      <PermissionsModal
+        isOpen={showPermissionsModal}
+        onClose={handleClosePermissions}
+        requiredFor="all"
+      />
+
       {/* ─── Toast Alerte Hors-Ligne ─── */}
       {isOffline && (
         <div
@@ -130,7 +157,7 @@ export default function PwaManager() {
           className="fixed bottom-20 right-4 z-50 flex items-center gap-3 px-4 py-3 bg-[#0B3D91] text-white rounded-2xl shadow-xl border border-blue-400/30 text-xs font-medium animate-scaleIn"
         >
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>Application GIT installée sur votre appareil !</span>
+          <span>Application GIT-SJD installée sur votre appareil !</span>
         </div>
       )}
 
@@ -147,7 +174,7 @@ export default function PwaManager() {
               </div>
               <div>
                 <h2 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider font-mono">
-                  Installer l'App GIT SJP
+                  Installer GIT-SJD
                 </h2>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
                   Accès instantané 1-clic, carte QR d'accès au labo et consultation hors-ligne.

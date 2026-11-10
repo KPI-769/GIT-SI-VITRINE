@@ -213,7 +213,7 @@ export default function PermissionsModal({
                 Autorisations PWA &amp; Périphériques
               </h3>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Division GIT · Contrôle des fonctionnalités
+                Division GIT-SJD · Contrôle des fonctionnalités
               </p>
             </div>
           </div>

@@ -15,6 +15,22 @@ function GithubIcon({ className = 'w-4 h-4' }: { className?: string }) {
   );
 }
 
+function LinkedinIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+    </svg>
+  );
+}
+
+function TiktokIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.97v7.54c-.03 2.05-.75 4.15-2.07 5.75-1.66 2.02-4.24 3.09-6.84 2.89-2.31-.17-4.49-1.35-5.83-3.23-1.61-2.23-1.89-5.26-.74-7.75 1.05-2.32 3.33-3.99 5.86-4.32.74-.1 1.5-.07 2.24.09v4.14c-.65-.21-1.37-.24-2.03-.09-1.12.25-2.06 1.07-2.48 2.14-.54 1.34-.17 2.97.91 3.93.99.88 2.44 1.11 3.69.57.86-.37 1.45-1.19 1.53-2.12.03-1.89.02-3.78.02-5.68V.02h-.27z"/>
+    </svg>
+  );
+}
+
 interface ShowcaseSectionProps {
   projects: Project[];
 }
@@ -154,7 +170,7 @@ export default function ShowcaseSection({ projects = [] }: ShowcaseSectionProps)
                       <span>{project.membersCount || project.contributors?.length || 1} contributeur(s)</span>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       {project.githubUrl && (
                         <a
                           href={project.githubUrl}
@@ -164,6 +180,28 @@ export default function ShowcaseSection({ projects = [] }: ShowcaseSectionProps)
                           title="Dépôt GitHub"
                         >
                           <GithubIcon className="w-4 h-4" />
+                        </a>
+                      )}
+                      {project.linkedinUrl && (
+                        <a
+                          href={project.linkedinUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 rounded-xl text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/60 transition"
+                          title="Suivi LinkedIn"
+                        >
+                          <LinkedinIcon className="w-4 h-4" />
+                        </a>
+                      )}
+                      {project.tiktokUrl && (
+                        <a
+                          href={project.tiktokUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 rounded-xl text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-950/60 transition"
+                          title="Suivi TikTok"
+                        >
+                          <TiktokIcon className="w-4 h-4" />
                         </a>
                       )}
                       {project.demoUrl && (

@@ -76,6 +76,8 @@ export interface Project {
   description: string;
   category: 'Systèmes Embarqués' | 'Logiciel & Fullstack' | 'Réseaux & IoT' | 'Automatique & Robotique';
   githubUrl?: string;
+  linkedinUrl?: string;
+  tiktokUrl?: string;
   demoUrl?: string;
   coverImage?: string;
   featured?: boolean;
@@ -96,6 +98,23 @@ export interface Event {
   status: EventStatus;
   coverImage?: string;
   registeredCount?: number;
+  registrations?: string[]; // IDs des membres inscrits
+}
+
+export type BroadcastStatus = 'UPCOMING' | 'LIVE' | 'COMPLETED';
+
+export interface Broadcast {
+  id: string;
+  title: string;
+  description: string;
+  scheduledAt: string;
+  endedAt?: string;
+  platform: 'YouTube' | 'TikTok' | 'Instagram' | 'Autre';
+  streamUrl?: string;
+  status: BroadcastStatus;
+  coverImage?: string;
+  registrations?: string[]; // IDs des membres ayant demandé à participer
+  createdAt: string;
 }
 
 export type CourseStatus = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED';
@@ -109,6 +128,7 @@ export interface Course {
   hoursCount?: number;
   startDate?: string;
   level: string; // "Tous Niveaux", "GI_3+", "GI_4 & GI_5"
+  enrollments?: string[]; // IDs des membres inscrits (pour les formations futures/planifiées)
 }
 
 export interface Certification {

@@ -51,7 +51,7 @@ export default function MobileBottomBar() {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-slate-900 dark:text-white">
-                    {currentUser ? `${currentUser.prenom} ${currentUser.nom}` : 'Division GIT · SJP'}
+                    {currentUser ? `${currentUser.prenom} ${currentUser.nom}` : 'Division GIT-SJD'}
                   </h4>
                   <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
                     {currentUser?.role || 'Plateforme Mobile'}
@@ -90,21 +90,35 @@ export default function MobileBottomBar() {
                 onClick={() => setIsMenuOpen(false)}
                 className="p-3 rounded-xl bg-slate-50 dark:bg-[#161F30] border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:text-blue-600 flex items-center gap-2"
               >
-                <span>🗓️ Événements</span>
+                <span>🗓️ Événements & Com</span>
               </Link>
               <Link
                 href="/formations-admin"
                 onClick={() => setIsMenuOpen(false)}
                 className="p-3 rounded-xl bg-slate-50 dark:bg-[#161F30] border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:text-blue-600 flex items-center gap-2"
               >
-                <span>🚀 Formations &amp; R&amp;D</span>
+                <span>🚀 Formations & R&D</span>
               </Link>
               <Link
                 href="/tresorier"
                 onClick={() => setIsMenuOpen(false)}
                 className="p-3 rounded-xl bg-slate-50 dark:bg-[#161F30] border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:text-blue-600 flex items-center gap-2"
               >
-                <span>💰 Trésorerie</span>
+                <span>💰 Trésorerie & Reçus</span>
+              </Link>
+              <Link
+                href="/censeur"
+                onClick={() => setIsMenuOpen(false)}
+                className="p-3 rounded-xl bg-slate-50 dark:bg-[#161F30] border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:text-blue-600 flex items-center gap-2"
+              >
+                <span>⚖️ Censeur & Scan</span>
+              </Link>
+              <Link
+                href="/labo"
+                onClick={() => setIsMenuOpen(false)}
+                className="p-3 rounded-xl bg-slate-50 dark:bg-[#161F30] border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:text-blue-600 flex items-center gap-2"
+              >
+                <span>🔬 Labo & Wi-Fi 6</span>
               </Link>
               <Link
                 href="/community-manager"
@@ -113,6 +127,15 @@ export default function MobileBottomBar() {
               >
                 <span>📸 Gestion Médias</span>
               </Link>
+              {currentUser?.role === 'ADMIN' && (
+                <Link
+                  href="/admin"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="col-span-2 p-3 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-100 flex items-center gap-2"
+                >
+                  <span>🛡️ Bureau Admin Central</span>
+                </Link>
+              )}
             </div>
 
             {/* Déconnexion ou Connexion */}

@@ -143,29 +143,29 @@ export default function PwaManager() {
         <div
           role="status"
           aria-live="polite"
-          className="fixed top-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-4 py-2 bg-amber-950/90 text-amber-200 border border-amber-600/40 rounded-full shadow-lg backdrop-blur-md text-xs font-mono font-medium animate-fadeIn"
+          className="fixed top-2 left-1/2 -translate-x-1/2 z-[70] flex items-center gap-2.5 px-4 py-2 bg-amber-950/90 text-amber-200 border border-amber-600/40 rounded-full shadow-lg backdrop-blur-md text-xs font-mono font-medium animate-fadeIn"
         >
           <WifiOff className="w-3.5 h-3.5 text-amber-400 shrink-0" />
           <span>Mode hors connexion actif · Cache local engagé</span>
         </div>
       )}
 
-      {/* ─── Notification de confirmation d'installation ─── */}
+      {/* ─── Notification de confirmation d'installation (En haut) ─── */}
       {justInstalled && (
         <div
           role="status"
-          className="fixed bottom-20 right-4 z-50 flex items-center gap-3 px-4 py-3 bg-[#0B3D91] text-white rounded-2xl shadow-xl border border-blue-400/30 text-xs font-medium animate-scaleIn"
+          className="fixed top-3 left-3 right-3 sm:left-auto sm:right-6 sm:top-4 sm:max-w-md z-[60] flex items-center gap-3 px-4 py-3 bg-[#0B3D91] text-white rounded-2xl shadow-2xl border border-blue-400/40 text-xs font-medium animate-fadeIn"
         >
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>Application GIT-SJD installée sur votre appareil !</span>
         </div>
       )}
 
-      {/* ─── Bannière d'Installation PWA (Non-intrusive) ─── */}
+      {/* ─── Bannière d'Installation PWA (Positionnée en haut) ─── */}
       {showBanner && !isInstalled && deferredPrompt && (
         <aside
           aria-label="Installation de l'application"
-          className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 sm:max-w-md z-40 bg-white/95 dark:bg-[#0D1629]/95 backdrop-blur-xl border border-slate-200 dark:border-blue-900/40 rounded-2xl p-4 shadow-2xl transition-all duration-200"
+          className="fixed top-3 left-3 right-3 sm:left-auto sm:right-6 sm:top-4 sm:max-w-md z-[60] bg-white/95 dark:bg-[#0D1629]/95 backdrop-blur-xl border border-blue-200/80 dark:border-blue-800/60 rounded-2xl p-3.5 sm:p-4 shadow-2xl transition-all duration-200 animate-fadeIn"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">

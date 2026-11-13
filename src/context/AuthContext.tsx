@@ -56,7 +56,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const STORAGE_KEY_USERS = 'git_community_users_v6_sjp';
-const STORAGE_KEY_PAYMENTS = 'git_community_payments_v6_sjp';
+const STORAGE_KEY_PAYMENTS = 'git_community_payments_v7_sjp'; // v7: reset paiements test, localStorage -> serveur
 const STORAGE_KEY_SESSION = 'git_community_session_v6_sjp';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -68,6 +68,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Chargement depuis le LocalStorage au démarrage + synchronisation avec MySQL
   useEffect(() => {
+    // Nettoyage des anciennes clés (migration v6 → v7)
+    localStorage.removeItem('git_community_payments_v6_sjp');
+
     try {
       const storedUsers = localStorage.getItem(STORAGE_KEY_USERS);
       const storedPayments = localStorage.getItem(STORAGE_KEY_PAYMENTS);

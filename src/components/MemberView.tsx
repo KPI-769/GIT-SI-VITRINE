@@ -10,6 +10,7 @@ import {
   Course,
   Event,
   Broadcast,
+  getCotisationAmountForUser,
 } from '@/lib/types';
 import DynamicQrCode from './DynamicQrCode';
 import { 
@@ -590,7 +591,7 @@ export default function MemberView({ user, onUpdateMacs }: MemberViewProps) {
             <div>
               <span className="section-label">Trésorerie & Dettes</span>
               <h3 className="text-lg font-bold text-slate-900 font-display">Historique des Cotisations</h3>
-              <p className="text-xs text-slate-500">Cotisation mensuelle fixée à 2 000 FCFA / mois selon CDC</p>
+              <p className="text-xs text-slate-500">Cotisation mensuelle fixée à {getCotisationAmountForUser(user).toLocaleString('fr-FR')} FCFA / mois selon CDC</p>
             </div>
             <div className="text-right">
               <span className="text-xs text-slate-500 block">Exercice en cours</span>

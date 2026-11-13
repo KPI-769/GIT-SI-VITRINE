@@ -837,15 +837,35 @@ export function splitFullName(fullName: string): { nom: string; prenom: string }
   return { nom, prenom };
 }
 
+// Helper pour trouver si un étudiant est au bureau exécutif (évite tout cumul de poste ou dédoublement de compte)
+export function findMatchingBureauMember(fullName: string): BureauMemberOfficial | undefined {
+  const upper = fullName.toUpperCase().trim();
+  return SJP_BUREAU_MEMBERS.find((bm) => {
+    const bmLast = bm.nom.toUpperCase().split(' ')[0];
+    const bmFirst = bm.prenom.toUpperCase().split(' ')[0];
+    if (upper.includes(bmLast) && (upper.includes(bmFirst) || upper.includes(bm.fullName.toUpperCase()))) {
+      return true;
+    }
+    if (bmLast.length >= 4 && upper.includes(bmLast)) {
+      return true;
+    }
+    return false;
+  });
+}
+
 export function generateOfficialUsers(): User[] {
   return SJP_OFFICIAL_MEMBERS.map((m, index) => {
     const { nom, prenom } = splitFullName(m.fullName);
     const userId = `usr_sjp_${String(index + 1).padStart(3, '0')}`;
+    const matchingBm = findMatchingBureauMember(m.fullName);
+    const isBureau = !!matchingBm;
+    const unitPrice = isBureau ? COTISATION_AMOUNT_BUREAU : COTISATION_AMOUNT_MEMBER;
+
     const initialCotisations: Cotisation[] = [9, 10, 11, 12, 1, 2, 3, 4, 5, 6].map((mois) => ({
       id: `cot_${userId}_${mois}`,
       mois,
       annee: CURRENT_YEAR,
-      montant: COTISATION_AMOUNT_MEMBER, // 1 000 FCFA pour les membres
+      montant: unitPrice, // 1 500 FCFA si bureau, 1 000 FCFA si membre (pas de cumul de poste)
       isPaid: false,
       userId,
     }));
@@ -857,13 +877,14 @@ export function generateOfficialUsers(): User[] {
       prenom,
       email: m.email,
       phone: m.phone === '(Numéro non renseigné)' ? '' : m.phone,
-      niveau: 'GI_4',
-      role: 'MEMBER' as const,
+      niveau: isBureau ? 'GI_Bureau' : 'GI_4',
+      role: isBureau ? matchingBm.role : ('MEMBER' as const),
+      poste: isBureau ? matchingBm.poste : undefined,
       isActive: true,
       mustChangePassword: true, // Requis: Modifiable à la 1ère connexion
       password: 'git2026',       // Mot de passe initial par défaut
       qrCodeToken: `token_sjp_${m.matricule.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
-      isWifiAllowed: false,
+      isWifiAllowed: isBureau,
       isLabAllowed: true,
       macAddresses: [],
       cotisations: initialCotisations,
@@ -1101,7 +1122,16 @@ export const SJP_BUREAU_MEMBERS: BureauMemberOfficial[] = [
 ];
 
 export function generateBureauUsers(): User[] {
-  return SJP_BUREAU_MEMBERS.map((bm) => {
+  // Filtrer les membres du bureau déjà présents dans la liste étudiante pour éviter tout doublon ou cumul de poste
+  return SJP_BUREAU_MEMBERS
+    .filter((bm) => {
+      const isAlreadyInStudents = SJP_OFFICIAL_MEMBERS.some((m) => {
+        const match = findMatchingBureauMember(m.fullName);
+        return match?.id === bm.id;
+      });
+      return !isAlreadyInStudents;
+    })
+    .map((bm) => {
     const userId = `usr_${bm.matricule.toLowerCase().replace(/-/g, '_')}`;
     const initialCotisations: Cotisation[] = [9, 10, 11, 12, 1, 2, 3, 4, 5, 6].map((mois) => ({
       id: `cot_${userId}_${mois}`,

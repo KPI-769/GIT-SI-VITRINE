@@ -43,3 +43,6 @@ ACCES_ET_IDENTIFIANTS.txt
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Finance centralized data
+.data/

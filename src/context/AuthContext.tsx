@@ -125,6 +125,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       })
       .catch((err) => console.warn('Connexion MySQL locale:', err));
+
+    // Synchronisation des paiements centralisés depuis le serveur
+    fetch('/api/payments')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && Array.isArray(d.payments) && d.payments.length > 0) {
+          setPayments(d.payments);
+          localStorage.setItem(STORAGE_KEY_PAYMENTS, JSON.stringify(d.payments));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Synchronisation des utilisateurs dans localStorage
@@ -452,6 +463,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     persistPayments([newPayment, ...payments]);
+
+    // Synchronisation centralisée côté serveur
+    fetch('/api/payments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newPayment),
+    }).catch(() => {});
 
     // Journalisation de la traçabilité
     logAdminAction({

@@ -142,15 +142,43 @@ export default function TreasurerView({
     setTimeout(() => setToastMsg(null), 3500);
   };
 
-  // Chargement des données persistées au montage
+  // Chargement des données centralisées (API) avec fallback localStorage
   useEffect(() => {
-    setDecaissements(loadDecaissements());
-    setAuditLogs(loadAuditLogs());
+    // Décaissements centralisés
+    fetch('/api/decaissements')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && Array.isArray(d.decaissements)) setDecaissements(d.decaissements);
+        else setDecaissements(loadDecaissements());
+      })
+      .catch(() => setDecaissements(loadDecaissements()));
+
+    // Logs d'audit centralisés
+    fetch('/api/audit-logs')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && Array.isArray(d.auditLogs)) setAuditLogs(d.auditLogs);
+        else setAuditLogs(loadAuditLogs());
+      })
+      .catch(() => setAuditLogs(loadAuditLogs()));
   }, []);
 
   const refreshAuditAndDecaissements = () => {
-    setDecaissements(loadDecaissements());
-    setAuditLogs(loadAuditLogs());
+    fetch('/api/decaissements')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && Array.isArray(d.decaissements)) setDecaissements(d.decaissements);
+        else setDecaissements(loadDecaissements());
+      })
+      .catch(() => setDecaissements(loadDecaissements()));
+
+    fetch('/api/audit-logs')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && Array.isArray(d.auditLogs)) setAuditLogs(d.auditLogs);
+        else setAuditLogs(loadAuditLogs());
+      })
+      .catch(() => setAuditLogs(loadAuditLogs()));
   };
 
   // Traitement central du QR Code scanné par la caméra
@@ -466,7 +494,14 @@ export default function TreasurerView({
 
     const updatedDecaissements = [newDecaissement, ...decaissements];
     setDecaissements(updatedDecaissements);
-    saveDecaissements(updatedDecaissements);
+    saveDecaissements(updatedDecaissements); // fallback localStorage
+
+    // Synchronisation centralisée côté serveur
+    fetch('/api/decaissements', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newDecaissement),
+    }).catch(() => {});
 
     // Journalisation immédiate de l'action pour traçabilité
     logAdminAction({

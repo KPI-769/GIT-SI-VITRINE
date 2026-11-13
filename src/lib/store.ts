@@ -143,4 +143,11 @@ export function logAdminAction(params: Omit<AuditLogItem, 'id' | 'timestamp'>) {
   };
   const updated = [newItem, ...currentLogs];
   saveAuditLogs(updated);
+
+  // Synchronisation centralisée côté serveur
+  fetch('/api/audit-logs', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(newItem),
+  }).catch(() => {});
 }

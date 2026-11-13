@@ -96,12 +96,14 @@ export const INITIAL_DECAISSEMENTS: Decaissement[] = [];
 
 export const INITIAL_AUDIT_LOGS: AuditLogItem[] = [];
 
-const DECAISSEMENTS_STORAGE_KEY = 'git_decaissements_v2';
-const AUDIT_LOGS_STORAGE_KEY = 'git_audit_logs_v2';
+const DECAISSEMENTS_STORAGE_KEY = 'git_decaissements_v3';
+const AUDIT_LOGS_STORAGE_KEY = 'git_audit_logs_v3';
 
 export function loadDecaissements(): Decaissement[] {
   if (typeof window === 'undefined') return INITIAL_DECAISSEMENTS;
   try {
+    localStorage.removeItem('git_decaissements_v1');
+    localStorage.removeItem('git_decaissements_v2');
     const stored = localStorage.getItem(DECAISSEMENTS_STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
@@ -119,6 +121,8 @@ export function saveDecaissements(items: Decaissement[]) {
 export function loadAuditLogs(): AuditLogItem[] {
   if (typeof window === 'undefined') return INITIAL_AUDIT_LOGS;
   try {
+    localStorage.removeItem('git_audit_logs_v1');
+    localStorage.removeItem('git_audit_logs_v2');
     const stored = localStorage.getItem(AUDIT_LOGS_STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);

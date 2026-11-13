@@ -55,9 +55,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const STORAGE_KEY_USERS = 'git_community_users_v6_sjp';
-const STORAGE_KEY_PAYMENTS = 'git_community_payments_v7_sjp'; // v7: reset paiements test, localStorage -> serveur
-const STORAGE_KEY_SESSION = 'git_community_session_v6_sjp';
+const STORAGE_KEY_USERS = 'git_community_users_v8_sjp';    // v8: remise a zero complete
+const STORAGE_KEY_PAYMENTS = 'git_community_payments_v8_sjp'; // v8: remise a zero complete
+const STORAGE_KEY_SESSION = 'git_community_session_v8_sjp';  // v8: remise a zero complete
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -68,8 +68,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Chargement depuis le LocalStorage au démarrage + synchronisation avec MySQL
   useEffect(() => {
-    // Nettoyage des anciennes clés (migration v6 → v7)
-    localStorage.removeItem('git_community_payments_v6_sjp');
+    // Nettoyage des anciennes clés (migration v6/v7 → v8, remise à zéro complète)
+    ['git_community_users_v6_sjp', 'git_community_users_v7_sjp',
+     'git_community_payments_v6_sjp', 'git_community_payments_v7_sjp',
+     'git_community_session_v6_sjp', 'git_community_session_v7_sjp',
+    ].forEach((k) => localStorage.removeItem(k));
 
     try {
       const storedUsers = localStorage.getItem(STORAGE_KEY_USERS);
@@ -157,14 +160,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const seen = new Set<string>();
         const deduped = merged.filter((p) => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
 
-        if (deduped.length > 0) {
-          setPayments(deduped);
-          localStorage.setItem(STORAGE_KEY_PAYMENTS, JSON.stringify(deduped));
-        }
+        setPayments(deduped);
+        localStorage.setItem(STORAGE_KEY_PAYMENTS, JSON.stringify(deduped));
       })
       .catch(() => {
         // Hors ligne : on garde le localStorage
-        if (localPayments.length > 0) setPayments(localPayments);
+        setPayments(localPayments);
       });
   }, []);
 

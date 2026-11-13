@@ -126,16 +126,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
       .catch((err) => console.warn('Connexion MySQL locale:', err));
 
-    // Synchronisation des paiements centralisés depuis le serveur
+    // Sync paiements : localStorage → serveur (préchargement)
+    // On lit d'abord le localStorage, puis on récupère les IDs déjà sur le serveur.
+    // Tout paiement local absent du serveur est poussé vers le serveur.
+    const localPaymentsRaw = localStorage.getItem(STORAGE_KEY_PAYMENTS);
+    const localPayments: Payment[] = localPaymentsRaw ? (() => { try { return JSON.parse(localPaymentsRaw); } catch { return []; } })() : [];
+
     fetch('/api/payments')
       .then((r) => r.json())
       .then((d) => {
-        if (d.success && Array.isArray(d.payments) && d.payments.length > 0) {
-          setPayments(d.payments);
-          localStorage.setItem(STORAGE_KEY_PAYMENTS, JSON.stringify(d.payments));
+        const serverPayments: Payment[] = d.success && Array.isArray(d.payments) ? d.payments : [];
+        const serverIds = new Set(serverPayments.map((p: Payment) => p.id));
+
+        // Paiements locaux absents du serveur → on les pousse
+        const toUpload = localPayments.filter((p) => p.id && !serverIds.has(p.id));
+        toUpload.forEach((p) => {
+          fetch('/api/payments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(p),
+          }).catch(() => {});
+        });
+
+        // Fusion : serveur + locaux non encore uploadés → état React
+        const merged = [...serverPayments, ...toUpload];
+        // Dédoublonnage par id
+        const seen = new Set<string>();
+        const deduped = merged.filter((p) => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
+
+        if (deduped.length > 0) {
+          setPayments(deduped);
+          localStorage.setItem(STORAGE_KEY_PAYMENTS, JSON.stringify(deduped));
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        // Hors ligne : on garde le localStorage
+        if (localPayments.length > 0) setPayments(localPayments);
+      });
   }, []);
 
   // Synchronisation des utilisateurs dans localStorage
